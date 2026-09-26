@@ -1,0 +1,12 @@
+{
+  "description": "跳跳酷跑 - 微信小游戏",
+  "compileType": "game",
+  "appid": "touristappid",
+  "projectname": "jump-runner",
+  "setting": {
+    "es6": true,
+    "urlCheck": false,
+    "minified": false
+  },
+  "condition": {}
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>跳跳酷跑 - 浏览器预览</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0b1226; overflow: hidden; }
+    canvas { display: block; touch-action: none; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <script src="/dev-preview/wx-stub.js"></script>
+  <script src="/dev-preview/loader.js"></script>
+  <script>
+    window.__bootError = null;
+    startGame('jump-runner/js/main.js')
+      .then((m) => m.start())
+      .catch((e) => { window.__bootError = String(e && e.stack ? e.stack : e); });
+  </script>
+</body>
+</html>
