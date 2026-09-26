@@ -2,5 +2,7 @@
 Thumbs.db
 .DS_Store
 
-# 临时脚本
+# 临时文件
+tmp_*
 *.tmp.py
+polish_*.py
