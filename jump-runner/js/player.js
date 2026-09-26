@@ -2,6 +2,7 @@
 const util = require('./util');
 const skins = require('./skins');
 const Mounts = require('./mounts');
+const Sprites = require('./sprites');
 
 const SKIN_TONE = '#FFE3C9';     // 肤色
 const SKIN_EDGE = 'rgba(160,96,62,0.45)'; // 脸部轮廓
@@ -131,23 +132,35 @@ class Player {
     }
 
     if (!blinkHide) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(
-        util.clamp(this.vy * 0.0004, -0.15, 0.3) +
-        (this.grounded && this.slide <= 0 ? 0.07 + Math.sin(this.run * 2) * 0.03 : 0)
-      );
-      ctx.scale(this.sx, this.sy);
-      Player.drawChibi(ctx, skin, {
-        run: this.run,
-        grounded: this.grounded,
-        vy: this.vy,
-        riding: !!mountId,
-        sliding: this.slide > 0,
-        mount: mountId,
-        t: time,
-      });
-      ctx.restore();
+      // 精灵渲染：素材就绪时优先使用（Kenney 角色，朝左素材翻转朝右）
+      let spriteDone = false;
+      if (Sprites.ready()) {
+        let pose = 'idle';
+        if (this.slide > 0) pose = mountId ? 'duck' : 'slide';
+        else if (mountId) pose = 'hold1';
+        else if (!this.grounded) pose = this.vy < 0 ? 'jump' : 'fall';
+        else pose = Math.floor(this.run * 1.9) % 2 === 0 ? 'walk1' : 'walk2';
+        spriteDone = Sprites.draw(ctx, skin.sprite, pose, x, y, 63, true);
+      }
+      if (!spriteDone) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(
+          util.clamp(this.vy * 0.0004, -0.15, 0.3) +
+          (this.grounded && this.slide <= 0 ? 0.07 + Math.sin(this.run * 2) * 0.03 : 0)
+        );
+        ctx.scale(this.sx, this.sy);
+        Player.drawChibi(ctx, skin, {
+          run: this.run,
+          grounded: this.grounded,
+          vy: this.vy,
+          riding: !!mountId,
+          sliding: this.slide > 0,
+          mount: mountId,
+          t: time,
+        });
+        ctx.restore();
+      }
     }
 
     // 护盾气泡

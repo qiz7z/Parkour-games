@@ -9,6 +9,7 @@ const MANIFEST = [
   'jump-runner/js/sound.js',
   'jump-runner/js/font.js',
   'jump-runner/js/skins.js',
+  'jump-runner/js/sprites.js',
   'jump-runner/js/mounts.js',
   'jump-runner/js/storage.js',
   'jump-runner/js/particles.js',

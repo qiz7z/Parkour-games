@@ -5,6 +5,7 @@ const util = require('./util');
 const skins = require('./skins');
 const mounts = require('./mounts');
 const Player = require('./player');
+const Sprites = require('./sprites');
 const sound = require('./sound');
 const F = require('./font');
 
@@ -137,6 +138,10 @@ function spacedText(ctx, str, x, y, spacing) {
 }
 
 function drawAvatar(ctx, skin, cx, cy, scale) {
+  if (Sprites.ready() && skin.sprite) {
+    Sprites.draw(ctx, skin.sprite, 'idle', cx, cy, 63 * scale, true);
+    return;
+  }
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);

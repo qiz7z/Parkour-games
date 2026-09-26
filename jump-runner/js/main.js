@@ -8,6 +8,7 @@ const ui = require('./ui');
 const skins = require('./skins');
 const Mounts = require('./mounts');
 const storage = require('./storage');
+const Sprites = require('./sprites');
 const bgModule = require('./background');
 
 const BASE_SPEED = 280;   // 初速度 px/s
@@ -663,6 +664,7 @@ function start() {
       game.odc = wx.getOpenDataContext();
     } catch (e) { /* 忽略 */ }
   }
+  Sprites.load(); // 异步加载角色素材帧
   api.__game = game; // 测试/浏览器预览用
   sound.setMuted(!!game.profile.mute); // 同步静音状态
   if (typeof window !== 'undefined') {
