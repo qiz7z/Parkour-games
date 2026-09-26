@@ -70,17 +70,19 @@ jump-runner/
 ├── game.js               # 小游戏入口（主域）
 ├── game.json             # 配置（横屏 + 开放数据域）
 ├── project.config.json   # 项目配置（appid 等）
+├── assets/characters/    # 角色素材帧（Kenney Platformer Characters，CC0，5 角色 × 9 姿势）
 ├── openDataContext/
 │   └── game.js           # 开放数据域：好友排行榜渲染（wx.getFriendCloudStorage）
 ├── js/
 │   ├── main.js           # 状态机（菜单/商店/排行/游戏/结算）、触摸生命周期、主循环 ★ 调参在这里
-│   ├── player.js         # 玩家物理、二段跳、Q 版小人绘制、骑乘姿态
+│   ├── player.js         # 玩家物理、二段跳、精灵/程序化双渲染、骑乘姿态
+│   ├── sprites.js        # 角色精灵加载与绘制（Kenney 素材，未就绪自动回退程序化）
 │   ├── mounts.js         # 坐骑定义/特权/程序化绘制（小马/恐龙/自行车/摩托）
 │   ├── world.js          # 地面分段/深坑/障碍/金币/道具的程序化生成 + 碰撞
 │   ├── background.js     # 视差背景 + 4 套昼夜配色
 │   ├── particles.js      # 粒子与飘字特效
-│   ├── ui.js             # 主菜单 / 个性商店 / 排行榜 / HUD / 结算（糖果按钮组件）
-│   ├── skins.js          # 角色定义（颜色 + 发型服装）
+│   ├── ui.js             # 主菜单 / 个性商店 / 排行榜 / HUD / 结算（深色电竞风）
+│   ├── skins.js          # 角色定义（对应 Kenney 素材角色 + 程序化配色）
 │   ├── storage.js        # 本地存档（最高分/金币/角色/坐骑/历史记录）
 │   ├── font.js           # 字体加载（得意黑 Smiley Sans，失败回退系统字体）
 │   ├── sound.js          # WebAudio 合成音效 + 背景音乐（不支持时自动静音）
