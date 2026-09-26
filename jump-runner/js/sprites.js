@@ -5,6 +5,10 @@ const POSES = ['walk1', 'walk2', 'jump', 'fall', 'slide', 'hurt', 'idle', 'duck'
 const FRAME_W = 80;
 const FRAME_H = 110;
 
+// 精灵渲染总开关：false = 使用程序化 Q 版角色（当前默认）。
+// 若想切回 Kenney 素材角色，改为 true 即可（assets/characters/ 素材保留在包内）。
+const ENABLED = false;
+
 const images = {};
 let pending = 0;
 let loadedCount = 0;
@@ -39,8 +43,9 @@ function makeImage(src) {
   return img;
 }
 
-// 启动加载（重复调用安全）
+// 启动加载（重复调用安全；总开关关闭时不发起请求）
 function load() {
+  if (!ENABLED) return;
   if (started) return;
   started = true;
   const chars = ['player', 'female', 'adventurer', 'soldier', 'zombie'];
@@ -54,7 +59,7 @@ function load() {
 
 // 全部素材就绪
 function ready() {
-  return started && pending > 0 && loadedCount === pending;
+  return ENABLED && started && pending > 0 && loadedCount === pending;
 }
 
 // 绘制单帧：底部中心锚点 (x,y)，h 为帧高（逻辑 px），flip=true 朝右
