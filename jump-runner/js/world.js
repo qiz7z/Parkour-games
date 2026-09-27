@@ -166,10 +166,15 @@ class World {
   collide(player) {
     const res = { hit: null, coins: [], items: [] };
     const sliding = player.slide > 0;
-    const bx = player.x - 12;
-    const by = sliding ? player.y - 16 : player.y - 40;
+    let bx = player.x - 12;
+    let by = sliding ? player.y - 16 : player.y - 40;
     const bw = 24;
-    const bh = sliding ? 14 : 38;
+    let bh = sliding ? 14 : 38;
+    // 骑乘时坐骑身体（鞍座到接触面）延伸碰撞盒：尖刺/木箱在骑乘时同样命中
+    if (player.mountBody && player.mountBodyH) {
+      const extend = player.y + player.mountBodyH - (by + bh);
+      if (extend > 0) bh += extend;
+    }
     for (const o of this.obstacles) {
       const sx = o.x - this.scroll;
       if (sx > player.x + 80) continue; // 还在玩家右侧远处

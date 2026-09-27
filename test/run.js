@@ -649,5 +649,23 @@ console.log('20) 双区操作：左半屏铲行 / 右半屏跳跃');
   gz.render();
 }
 
+console.log('21) 骑乘碰撞：坐骑身体参与（尖刺也命中坐骑）');
+{
+  const g1 = newGame();
+  g1.profile.mount = 'bicycle';
+  g1.profile.ownedMounts = ['none', 'bicycle'];
+  g1.onTap(0, 0);
+  for (let i = 0; i < 30; i++) g1.update(1 / 60);
+  check(g1.riding === true, '骑行中');
+  // 骑行状态正前方放尖刺
+  g1.world.obstacles.push({ type: 'spike', x: g1.scroll + g1.player.x + g1.speed * 0.25, w: 24, h: 30 });
+  let t = 0;
+  while (t < 3 && g1.state === 'play' && g1.invincible <= 0) { g1.update(1 / 60); t += 1 / 60; }
+  check(g1.state === 'play' && g1.invincible > 0 && g1.riding === false, '骑行撞尖刺：坐骑逃跑替玩家挡下');
+  g1.render();
+}
+
+console.log(failures === 0 ? '\n全部通过 ✔' : '\n有 ' + failures + ' 项失败 ✘');
+process.exit(failures === 0 ? 0 : 1);
 console.log(failures === 0 ? '\n全部通过 ✔' : '\n有 ' + failures + ' 项失败 ✘');
 process.exit(failures === 0 ? 0 : 1);

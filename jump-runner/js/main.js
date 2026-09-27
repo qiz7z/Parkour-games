@@ -376,6 +376,9 @@ function createGame(canvas, ctx, W, H, opts) {
     // 骑乘时角色落在鞍座面上（铲行时坐骑一并压低）
     const rideH = rideHOf(p.slide > 0);
     const rideGroundY = groundY - rideH;
+    // 坐骑身体参与碰撞：从鞍座延伸到接触面（骑乘时尖刺/木箱同样会命中坐骑）
+    p.mountBody = game.riding;
+    p.mountBodyH = rideH;
 
     // 无敌 / 磁铁 计时
     if (game.invincible > 0) game.invincible -= dt;
