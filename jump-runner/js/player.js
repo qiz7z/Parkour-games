@@ -134,16 +134,27 @@ class Player {
     };
     if (mountId && !blinkHide) {
       const useSprite = Sprites.ready();
-      if (!useSprite) Player.drawChibi(ctx, skin, Object.assign({ pass: 'far' }, chibiOpts));
+      if (!useSprite) {
+        ctx.save();
+        ctx.translate(x, y); // 骑乘分层通道同样要平移到骑手位置
+        Player.drawChibi(ctx, skin, Object.assign({ pass: 'far' }, chibiOpts));
+        ctx.restore();
+      }
       Mounts.draw(ctx, mountId, x, y + rideH, time, {
         run: this.run,
         grounded: this.grounded,
         squash: this.slide > 0,
       });
       if (!useSprite) {
+        ctx.save();
+        ctx.translate(x, y);
         Player.drawChibi(ctx, skin, Object.assign({ pass: 'near' }, chibiOpts));
+        ctx.restore();
       } else {
+        ctx.save();
+        ctx.translate(x, y);
         Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
+        ctx.restore();
       }
     } else if (!blinkHide) {
       // 步行/滑铲（无坐骑）：精灵或程序化
