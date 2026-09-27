@@ -122,24 +122,34 @@ class Player {
     // 无敌闪烁：隔帧隐藏本体
     const blinkHide = opts.invincible > 0 && Math.floor(time * 14) % 2 === 0;
 
-    // 坐骑画在角色下面（骑乘时角色的脚底 = 坐骑鞍座面；铲行时坐骑一并压低）
+    // 骑乘分层合成：远腿（身后）→ 坐骑 → 近腿+身体（身前），腿真正跨在坐骑上
+    const chibiOpts = {
+      run: this.run,
+      grounded: this.grounded,
+      vy: this.vy,
+      riding: !!mountId,
+      sliding: this.slide > 0,
+      mount: mountId,
+      t: time,
+    };
     if (mountId && !blinkHide) {
+      const useSprite = Sprites.ready();
+      if (!useSprite) Player.drawChibi(ctx, skin, Object.assign({ pass: 'far' }, chibiOpts));
       Mounts.draw(ctx, mountId, x, y + rideH, time, {
         run: this.run,
         grounded: this.grounded,
         squash: this.slide > 0,
       });
-    }
-
-    if (!blinkHide) {
-      // 精灵渲染：素材就绪时优先使用（Kenney 角色，朝左素材翻转朝右）
+      if (!useSprite) {
+        Player.drawChibi(ctx, skin, Object.assign({ pass: 'near' }, chibiOpts));
+      } else {
+        Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
+      }
+    } else if (!blinkHide) {
+      // 步行/滑铲（无坐骑）：精灵或程序化
       let spriteDone = false;
       if (Sprites.ready()) {
-        let pose = 'idle';
-        if (this.slide > 0) pose = mountId ? 'duck' : 'slide';
-        else if (mountId) pose = 'hold1';
-        else if (!this.grounded) pose = this.vy < 0 ? 'jump' : 'fall';
-        else pose = Math.floor(this.run * 1.9) % 2 === 0 ? 'walk1' : 'walk2';
+        const pose = this.slide > 0 ? 'slide' : (!this.grounded ? (this.vy < 0 ? 'jump' : 'fall') : (Math.floor(this.run * 1.9) % 2 === 0 ? 'walk1' : 'walk2'));
         spriteDone = Sprites.draw(ctx, skin.sprite, pose, x, y, 63, true);
       }
       if (!spriteDone) {
@@ -213,8 +223,9 @@ function drawChibi(ctx, skin, o) {
   const HY = -41;    // 头中心 y
   const FACE_R = 13; // 脸半径
 
-  // 坐骑参数
+  // 坐骑参数与渲染分层（骑乘时远腿在坐骑后、近腿+身体在坐骑前）
   const mountId = o.mount || null;
+  const pass = o.pass || 'full';
 
   ctx.save();
   let lying = false; // 步行铲行：上身绕髋后仰的贴地滑行
@@ -255,17 +266,17 @@ function drawChibi(ctx, skin, o) {
       hipSway = Math.sin(th) * 1.6;
       f1 = { x: 3 + Math.cos(th) * 12, y: 23 + Math.sin(th) * 12 };
       f2 = { x: 3 + Math.cos(th + Math.PI) * 12, y: 23 + Math.sin(th + Math.PI) * 12 };
-      h1 = { x: 25, y: -7 };
-      h2 = { x: 27.5, y: -5.5 };
+      h1 = { x: 30, y: -4.5 };
+      h2 = { x: 32, y: -2.5 };
       rideBob = Math.sin(th * 2) * 1.2;
     } else if (mountId === 'moto') {
-      // 趴趴姿势 + 引擎微振
-      rideLean = 0.16;
-      f1 = { x: 6, y: -1 };
-      f2 = { x: 11, y: -3 };
-      h1 = { x: 15, y: -8 };
-      h2 = { x: 19, y: -9.5 };
-      rideBob = grounded ? Math.sin(run * 12) * 0.5 : 0;
+      // 驾驶姿势：深前倾、头压低贴近油箱 + 引擎微振
+      rideLean = 0.26;
+      f1 = { x: 7, y: -2 };
+      f2 = { x: 12, y: -3.5 };
+      h1 = { x: 20, y: -11 };
+      h2 = { x: 23, y: -12.5 };
+      rideBob = grounded ? Math.sin(run * 12) * 0.7 : 0;
     } else {
       // 小马驹 / 小恐龙：随步态起伏，手握缰绳
       rideLean = 0.06 + Math.sin(run * 0.9) * 0.035;
@@ -298,36 +309,47 @@ function drawChibi(ctx, skin, o) {
   // 身体随骑乘节奏前倾
   if (riding) ctx.rotate(rideLean);
 
-  // ---- 腿 + 鞋 ----
+  // ---- 腿 + 鞋（骑乘时分层：远腿在坐骑后、近腿在坐骑前，腿跨在坐骑上） ----
+  const drawShoe = (fx, fy) => {
+    roundFill(ctx, fx - 2.5, fy - 5.2, 9.5, 5, 2.4, outfit, LINE);
+    roundFill(ctx, fx - 3.2, fy - 2.2, 10.5, 2.6, 1.3, LINE, null);
+    roundFill(ctx, fx - 1.2, fy - 4.4, 3.2, 1.4, 0.7, outfitLite, null);
+  };
   if (riding) {
-    // 骑乘：髋部锚定鞍座（自行车随踏板微移），双腿画在身体后侧，
-    // 膝盖和脚从身体两侧露出踩踏（大头比例下最自然的读法）
+    // 骑乘：髋部锚定鞍座（自行车随踏板微移）
     const hp1 = mountId === 'bicycle' ? { x: -10 + hipSway, y: -5 } : { x: -4, y: -13 };
     const hp2 = mountId === 'bicycle' ? { x: -6 + hipSway, y: -5 } : { x: 4, y: -13 };
-    limbIK(ctx, hp1.x, hp1.y, f1.x, f1.y - 2, 0.24, 0.9, -0.45, 6, 4.8, 'rgba(214,141,105,0.9)');
-    limbIK(ctx, hp2.x, hp2.y, f2.x, f2.y - 2, 0.24, 0.9, -0.45, 6, 4.8, SKIN_TONE);
+    if (pass !== 'near') limbIK(ctx, hp1.x, hp1.y, f1.x, f1.y - 2, 0.24, 0.9, -0.45, 6, 4.8, 'rgba(200,130,98,0.9)');
+    if (pass !== 'far') {
+      limbIK(ctx, hp2.x, hp2.y, f2.x, f2.y - 2, 0.24, 0.9, -0.45, 6, 4.8, SKIN_TONE);
+      drawShoe(f2.x, f2.y);
+    }
+    if (pass !== 'near') drawShoe(f1.x, f1.y);
   } else if (sliding) {
     // 铲行：双腿从髋部向后拖（膝盖微拱），髋部已随前扑前移到 8,-5 / 4,-5
     limbIK(ctx, 8, -5, f1.x, f1.y - 2, 0.24, -0.6, -0.8, 6, 4.8, 'rgba(214,141,105,0.9)');
     limbIK(ctx, 4, -5, f2.x, f2.y - 2, 0.24, -0.6, -0.8, 6, 4.8, SKIN_TONE);
+    drawShoe(f1.x, f1.y);
+    drawShoe(f2.x, f2.y);
   } else if (grounded) {
     // 跑步：膝盖朝前泵动（远腿暗、近腿亮，拉开层次）
     limbIK(ctx, -4, -13, f1.x, f1.y - 2, 0.24, 1, -0.45, 6, 4.8, 'rgba(214,141,105,0.9)');
     limbIK(ctx, 4, -13, f2.x, f2.y - 2, 0.24, 1, -0.45, 6, 4.8, SKIN_TONE);
+    drawShoe(f1.x, f1.y);
+    drawShoe(f2.x, f2.y);
   } else {
     // 空中：收腿/展腿
     limbIK(ctx, -4, -13, f1.x, f1.y - 2, 0.24, 0.9, -0.4, 6, 4.8, 'rgba(214,141,105,0.9)');
     limbIK(ctx, 4, -13, f2.x, f2.y - 2, 0.24, 0.9, -0.4, 6, 4.8, SKIN_TONE);
+    drawShoe(f1.x, f1.y);
+    drawShoe(f2.x, f2.y);
   }
-  // 鞋：鞋面 + 鞋底 + 高光（骑行时近脚稍后画在最前层）
-  roundFill(ctx, f1.x - 2.5, f1.y - 5.2, 9.5, 5, 2.4, outfit, LINE);
-  roundFill(ctx, f1.x - 3.2, f1.y - 2.2, 10.5, 2.6, 1.3, LINE, null);
-  roundFill(ctx, f1.x - 1.2, f1.y - 4.4, 3.2, 1.4, 0.7, outfitLite, null);
-  roundFill(ctx, f2.x - 2.5, f2.y - 5.2, 9.5, 5, 2.4, outfit, LINE);
-  roundFill(ctx, f2.x - 3.2, f2.y - 2.2, 10.5, 2.6, 1.3, LINE, null);
-  roundFill(ctx, f2.x - 1.2, f2.y - 4.4, 3.2, 1.4, 0.7, outfitLite, null);
 
-  // ---- 上半身（随骑乘节奏起伏；脚不参与） ----
+  // ---- 上半身（随骑乘节奏起伏；脚不参与；far 层到此为止） ----
+  if (pass === 'far') {
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.translate(0, upperBob);
   if (lying) {
