@@ -122,64 +122,67 @@ class Player {
     // 无敌闪烁：隔帧隐藏本体
     const blinkHide = opts.invincible > 0 && Math.floor(time * 14) % 2 === 0;
 
-    // 骑乘分层合成：远腿（身后）→ 坐骑 → 近腿+身体（身前），腿真正跨在坐骑上
+    // 姿势量化键：连续动作量化为离散姿势帧（供超采样缓存）
+    const PI2L = Math.PI * 2;
+    let poseKey;
+    let qRun = this.run;
+    let qVy = this.vy;
+    if (mountId) {
+      const thq = Math.floor(((this.run * 1.5) / PI2L) * 8) % 8;
+      qRun = (thq / 8) * PI2L / 1.5;
+      poseKey = 'ride' + thq + (this.slide > 0 ? 's' : '');
+    } else if (this.slide > 0) {
+      poseKey = 'slide';
+    } else if (!this.grounded) {
+      const lvl = Math.round(util.clamp(this.vy / 700, -1, 1) * 2 + 2); // 0..4
+      qVy = (lvl - 2) * 350;
+      poseKey = 'air' + lvl;
+    } else {
+      const ph = Math.floor((this.run / PI2L) * 8) % 8;
+      qRun = (ph / 8) * PI2L;
+      poseKey = 'run' + ph;
+    }
+
     const chibiOpts = {
-      run: this.run,
+      run: qRun,
       grounded: this.grounded,
-      vy: this.vy,
+      vy: qVy,
       riding: !!mountId,
       sliding: this.slide > 0,
       mount: mountId,
-      t: time,
+      t: 1.23, // 固定值：缓存帧不眨眼
     };
-    if (mountId && !blinkHide) {
-      const useSprite = Sprites.ready();
-      if (!useSprite) {
-        ctx.save();
-        ctx.translate(x, y); // 骑乘分层通道同样要平移到骑手位置
-        Player.drawChibi(ctx, skin, Object.assign({ pass: 'far' }, chibiOpts));
-        ctx.restore();
-      }
-      Mounts.draw(ctx, mountId, x, y + rideH, time, {
-        run: this.run,
-        grounded: this.grounded,
-        squash: this.slide > 0,
-      });
-      if (!useSprite) {
-        ctx.save();
-        ctx.translate(x, y);
-        Player.drawChibi(ctx, skin, Object.assign({ pass: 'near' }, chibiOpts));
-        ctx.restore();
+
+    if (!blinkHide) {
+      if (mountId) {
+        // 骑乘分层合成：远腿画布 → 坐骑（程序化，车轮转动）→ 近腿+身体画布
+        if (!Sprites.ready()) {
+          const farC = poseCanvas(skin, poseKey + '#far', (pc) =>
+            Player.drawChibi(pc, skin, Object.assign({ pass: 'far' }, chibiOpts)));
+          ctx.drawImage(farC, x - POSE_OX, y - POSE_OY, POSE_BOX_W, POSE_BOX_H);
+          Mounts.draw(ctx, mountId, x, y + rideH, time, {
+            run: this.run,
+            grounded: this.grounded,
+            squash: this.slide > 0,
+          });
+          const nearC = poseCanvas(skin, poseKey + '#near', (pc) =>
+            Player.drawChibi(pc, skin, Object.assign({ pass: 'near' }, chibiOpts)));
+          ctx.drawImage(nearC, x - POSE_OX, y - POSE_OY, POSE_BOX_W, POSE_BOX_H);
+        } else {
+          Mounts.draw(ctx, mountId, x, y + rideH, time, {
+            run: this.run,
+            grounded: this.grounded,
+            squash: this.slide > 0,
+          });
+          Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
+        }
       } else {
+        // 步行/滑铲/空中：超采样姿势画布（落地挤压拉伸作用于贴图）
+        const bodyC = poseCanvas(skin, poseKey, (pc) => Player.drawChibi(pc, skin, chibiOpts));
         ctx.save();
         ctx.translate(x, y);
-        Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
-        ctx.restore();
-      }
-    } else if (!blinkHide) {
-      // 步行/滑铲（无坐骑）：精灵或程序化
-      let spriteDone = false;
-      if (Sprites.ready()) {
-        const pose = this.slide > 0 ? 'slide' : (!this.grounded ? (this.vy < 0 ? 'jump' : 'fall') : (Math.floor(this.run * 1.9) % 2 === 0 ? 'walk1' : 'walk2'));
-        spriteDone = Sprites.draw(ctx, skin.sprite, pose, x, y, 63, true);
-      }
-      if (!spriteDone) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(
-          util.clamp(this.vy * 0.0004, -0.15, 0.3) +
-          (this.grounded && this.slide <= 0 ? 0.07 + Math.sin(this.run * 2) * 0.03 : 0)
-        );
         ctx.scale(this.sx, this.sy);
-        Player.drawChibi(ctx, skin, {
-          run: this.run,
-          grounded: this.grounded,
-          vy: this.vy,
-          riding: !!mountId,
-          sliding: this.slide > 0,
-          mount: mountId,
-          t: time,
-        });
+        ctx.drawImage(bodyC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
         ctx.restore();
       }
     }
@@ -484,6 +487,13 @@ function drawChibi(ctx, skin, o) {
       torsoGradCache[torsoKey] = tg;
     }
     roundFill(ctx, -13, -29, 26, 18, 8, torsoGradCache[torsoKey], null);
+    // 衣身右侧轮廓光
+    ctx.strokeStyle = 'rgba(255,246,230,0.4)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(11.6, -26);
+    ctx.quadraticCurveTo(13.2, -20, 11.4, -13);
+    ctx.stroke();
     // 右侧衣身阴影
     ctx.save();
     roundFill(ctx, -13, -29, 26, 18, 8, null, null);
@@ -560,6 +570,12 @@ function drawChibi(ctx, skin, o) {
   ctx.fill();
   ctx.strokeStyle = SKIN_EDGE;
   ctx.lineWidth = 1.4;
+  ctx.stroke();
+  // 头部轮廓光（右上受光边，超采样下可见的细线）
+  ctx.strokeStyle = 'rgba(255,246,230,0.55)';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.arc(HX, HY + 2.2, FACE_R - 1, Math.PI * 1.42, Math.PI * 1.86);
   ctx.stroke();
   // 左下脸颊阴影（受光自右上）
   ctx.fillStyle = 'rgba(214,141,105,0.22)';
@@ -776,21 +792,16 @@ function drawChibi(ctx, skin, o) {
   ctx.fillStyle = '#E8836B';
   ctx.fill();
 
-  // 腮红（双层柔化）
-  ctx.fillStyle = 'rgba(255,120,110,0.22)';
-  ctx.beginPath();
-  ctx.arc(HX - 9, HY + 6, 3.6, 0, PI2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(HX + 10.5, HY + 6, 3.6, 0, PI2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,120,110,0.35)';
-  ctx.beginPath();
-  ctx.arc(HX - 9, HY + 6, 2.1, 0, PI2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(HX + 10.5, HY + 6, 2.1, 0, PI2);
-  ctx.fill();
+  // 腮红（柔边径向渐变，超采样下自然过渡）
+  for (const bx of [HX - 9, HX + 10.5]) {
+    const bl = ctx.createRadialGradient(bx, HY + 6, 0.4, bx, HY + 6, 3.8);
+    bl.addColorStop(0, 'rgba(255,120,110,0.38)');
+    bl.addColorStop(1, 'rgba(255,120,110,0)');
+    ctx.fillStyle = bl;
+    ctx.beginPath();
+    ctx.arc(bx, HY + 6, 3.8, 0, PI2);
+    ctx.fill();
+  }
 
   ctx.restore(); // 上半身起伏
 
@@ -818,6 +829,34 @@ function darkOf(skin) {
 
 // 躯干渐变缓存（按 皮肤id+款式 键控；同一画布上复用）
 const torsoGradCache = {};
+
+// ---- 姿势超采样缓存：每个（皮肤,姿势）预渲染到 3 倍分辨率离屏画布 ----
+// 主循环只做 drawImage 缩放贴图：边缘平滑、细节精致、渲染成本反而更低
+const POSE_SCALE = 3;
+const POSE_BOX_W = 44;  // 精灵框宽（骑乘踏板下探到 +35，故框比站立人物大）
+const POSE_BOX_H = 104; // 精灵框高（原点上方 64、下方 40）
+const POSE_OX = 22;     // 原点（脚底/鞍座）在框内 x
+const POSE_OY = 64;     // 原点在框内 y
+const poseCache = new Map();
+if (typeof window !== 'undefined') window.__poseCache = poseCache; // 调试用
+
+function poseCanvas(skin, key, drawFn) {
+  const id = skin.id + '|' + key;
+  let c = poseCache.get(id);
+  if (!c) {
+    c = (typeof wx !== 'undefined' && wx.createCanvas)
+      ? wx.createCanvas()
+      : document.createElement('canvas');
+    c.width = POSE_BOX_W * POSE_SCALE;
+    c.height = POSE_BOX_H * POSE_SCALE;
+    const pctx = c.getContext('2d');
+    pctx.scale(POSE_SCALE, POSE_SCALE);
+    pctx.translate(POSE_OX, POSE_OY);
+    drawFn(pctx);
+    poseCache.set(id, c);
+  }
+  return c;
+}
 
 // 两段式胶囊肢体：根→关节→端点；近端粗、远端细、关节圆平滑过渡
 function limbIK(ctx, x0, y0, x1, y1, bend, bdx, bdy, wNear, wFar, color) {

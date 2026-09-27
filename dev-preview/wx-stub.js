@@ -25,8 +25,16 @@
     resizeTimer = setTimeout(() => location.reload(), 200);
   });
 
+  let mainCanvasUsed = false;
   window.wx = {
-    createCanvas: () => canvas,
+    // 与真机一致：首次调用返回屏幕画布，后续调用返回离屏画布
+    createCanvas: () => {
+      if (!mainCanvasUsed) {
+        mainCanvasUsed = true;
+        return canvas;
+      }
+      return document.createElement('canvas');
+    },
     getWindowInfo: () => ({
       windowWidth: Math.max(1, innerWidth),
       windowHeight: Math.max(1, innerHeight),
