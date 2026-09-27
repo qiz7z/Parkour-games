@@ -434,11 +434,14 @@ function drawChibi(ctx, skin, o) {
     ctx.beginPath();
     ctx.arc(HX, HY, 17.5, 0, PI2);
     ctx.fill();
-  } else if (kind === 'boy_cap') {
-    ctx.fillStyle = hairC;
+  } else if (kind === 'boy_spiky') {
     ctx.beginPath();
-    ctx.arc(HX, HY, FACE_R + 1.5, 0, PI2);
+    ctx.arc(HX, HY, FACE_R + 3.4, 0, PI2);
+    ctx.fillStyle = hairC;
     ctx.fill();
+    for (const sa of [-2.75, -2.35, -0.75, -0.35]) {
+      hairSpike(ctx, HX, HY, FACE_R + 2, sa, 9, hairC);
+    }
   }
 
   // ---- 身体（上衣+短裤 / 连衣裙）+ 阴影 + 服装细节 ----
@@ -592,26 +595,18 @@ function drawChibi(ctx, skin, o) {
   ctx.stroke();
 
   // ---- 前层发型 / 帽子 / 兜帽 ----
-  if (kind === 'boy_cap') {
-    // 棒球帽：帽体 + 帽檐 + 帽扣 + 小徽标
-    ctx.beginPath();
-    ctx.arc(HX, HY - 3, FACE_R + 1.4, Math.PI * 0.97, Math.PI * 2.03);
-    ctx.closePath();
-    ctx.fillStyle = outfit;
-    ctx.fill();
-    ctx.strokeStyle = LINE;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    roundFill(ctx, HX + 5, HY - 10.5, 17, 5, 2.5, outfit, LINE); // 帽檐
-    ctx.beginPath();
-    ctx.arc(HX, HY - 16, 1.8, 0, PI2);
-    ctx.fillStyle = cloth;
-    ctx.fill();
-    ctx.strokeStyle = LINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    // 帽下碎发
-    zigzag(ctx, HX, HY - 5.5, FACE_R - 1, hairC, 3, 3.4);
+  if (kind === 'boy_spiky') {
+    // 冠部发刺扇（向上炸开的多缕尖刺）
+    const fan = [-2.62, -2.28, -1.94, -0.86, -0.52, -0.2];
+    fan.forEach((sa, i) => {
+      hairSpike(ctx, HX, HY, FACE_R + 0.5, sa, 8 + (i % 2) * 3.5, hairC);
+    });
+    hairSpike(ctx, HX, HY, FACE_R + 0.5, -1.57, 11.5, hairC);
+    // 齿状刘海 + 光泽带
+    bangSpikes(ctx, HX, HY + 1, FACE_R - 1.5, hairC, hairLite);
+    // 侧发（框脸两缕长刺）
+    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.92, 13, hairC);
+    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.08, 13, hairC);
   } else if (kind === 'boy_hood') {
     // 兜帽沿 + 深色刘海
     ctx.strokeStyle = outfit;
@@ -735,35 +730,40 @@ function drawChibi(ctx, skin, o) {
     ctx.ellipse(ex, ey, 3.0, 4.2, 0, 0, PI2);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
-    // 虹膜（上深下浅）
+    // 虹膜：垂直渐变（上深下亮，动漫眼核心特征）
+    const ig = ctx.createLinearGradient(0, ey - 3.2, 0, ey + 3.6);
+    ig.addColorStop(0, eyeDeep);
+    ig.addColorStop(0.5, eyeMain);
+    ig.addColorStop(1, skins.rgb(mixc(skin.eye || [70, 55, 48], [255, 255, 230], 0.45)));
     ctx.beginPath();
-    ctx.arc(ex + 0.5, ey + 0.7, 2.7, 0, PI2);
-    ctx.fillStyle = eyeDeep;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(ex + 0.5, ey + 1.3, 2.15, 0, PI2);
-    ctx.fillStyle = eyeMain;
+    ctx.ellipse(ex + 0.4, ey + 0.4, 2.55, 3.3, 0, 0, PI2);
+    ctx.fillStyle = ig;
     ctx.fill();
     // 瞳孔
     ctx.beginPath();
-    ctx.arc(ex + 0.7, ey + 0.9, 1.4, 0, PI2);
-    ctx.fillStyle = '#2B2320';
+    ctx.arc(ex + 0.6, ey + 0.6, 1.35, 0, PI2);
+    ctx.fillStyle = '#241C18';
     ctx.fill();
-    // 双高光
+    // 瞳孔底缘反光
+    ctx.beginPath();
+    ctx.arc(ex + 0.6, ey + 1.7, 0.9, 0, PI2);
+    ctx.fillStyle = 'rgba(255,255,240,0.35)';
+    ctx.fill();
+    // 双高光（大上 + 小下）
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
-    ctx.arc(ex - 0.6, ey - 1.1, 1.15, 0, PI2);
+    ctx.arc(ex - 0.7, ey - 1.2, 1.2, 0, PI2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(ex + 1.5, ey + 0.6, 0.6, 0, PI2);
+    ctx.arc(ex + 1.6, ey + 0.7, 0.62, 0, PI2);
     ctx.fill();
-    // 上睫毛：填充楔形（外眼角加厚）
+    // 上睫毛：填充楔形（外眼角加厚上挑）
     ctx.fillStyle = LINE;
     ctx.beginPath();
     ctx.moveTo(ex - 3.1, ey - 2.5);
     ctx.quadraticCurveTo(ex, ey - 5.4, ex + 3.1, ey - 2.3);
-    ctx.lineTo(ex + 3.4, ey - 3.6);
-    ctx.quadraticCurveTo(ex, ey - 6.2, ex - 3.4, ey - 3.7);
+    ctx.lineTo(ex + 3.9, ey - 3.9);
+    ctx.quadraticCurveTo(ex + 0.4, ey - 6.4, ex - 3.5, ey - 3.8);
     ctx.closePath();
     ctx.fill();
     // 下眼睑（极淡）
@@ -806,6 +806,54 @@ function drawChibi(ctx, skin, o) {
   ctx.restore(); // 上半身起伏
 
   ctx.restore(); // 铲行压缩
+}
+
+// 动漫发刺：从头皮沿角度 a 长出的弯曲尖刺（一缕头发）
+function hairSpike(ctx, cx, cy, r, a, len, color) {
+  const tx = cx + Math.cos(a) * (r + len);
+  const ty = cy + Math.sin(a) * (r + len);
+  const b1x = cx + Math.cos(a - 0.3) * (r - 2);
+  const b1y = cy + Math.sin(a - 0.3) * (r - 2);
+  const b2x = cx + Math.cos(a + 0.3) * (r - 2);
+  const b2y = cy + Math.sin(a + 0.3) * (r - 2);
+  ctx.beginPath();
+  ctx.moveTo(b1x, b1y);
+  ctx.quadraticCurveTo(
+    cx + Math.cos(a - 0.1) * (r + len * 0.62),
+    cy + Math.sin(a - 0.1) * (r + len * 0.62),
+    tx, ty
+  );
+  ctx.quadraticCurveTo(
+    cx + Math.cos(a + 0.12) * (r + len * 0.55),
+    cy + Math.sin(a + 0.12) * (r + len * 0.55),
+    b2x, b2y
+  );
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// 齿状刘海：额头上一排向下弯尖（动漫刘海）
+function bangSpikes(ctx, cx, cy, r, color, lite) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(cx - r - 1.5, cy - 3);
+  const n = 4;
+  for (let i = 0; i < n; i++) {
+    const x0 = cx - r + (i * 2 * r) / n;
+    const x1 = cx - r + ((i + 1) * 2 * r) / n;
+    ctx.quadraticCurveTo((x0 + x1) / 2, cy + 7.5 + (i % 2) * 2.2, x1, cy - 1.5);
+  }
+  ctx.lineTo(cx + r + 1.5, cy - 4);
+  ctx.arc(cx, cy - 5, r + 1.4, 0, Math.PI, true);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = lite;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, cy - 4, r + 0.2, Math.PI * 1.25, Math.PI * 1.62);
+  ctx.stroke();
 }
 
 // 刘海锯齿（帽檐/兜帽下露出的碎发）

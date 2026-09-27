@@ -4,8 +4,8 @@ const SKINS = [
   {
     id: 'classic', name: '阿杰', price: 0, sprite: 'player',
     fill: [255, 111, 91], dark: [201, 79, 59],
-    hair: [93, 64, 55], cloth: [255, 255, 255],
-    eye: [109, 76, 65],
+    hair: [255, 158, 64], cloth: [255, 255, 255],
+    eye: [180, 90, 40], kind: 'boy_spiky',
   },
   {
     id: 'mint', name: '小薄荷', price: 100, sprite: 'female',
