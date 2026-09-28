@@ -280,8 +280,8 @@ function drawChibi(ctx, skin, o) {
       hipSway = Math.sin(th) * 1.6;
       f1 = { x: 3 + Math.cos(th) * 12, y: 23 + Math.sin(th) * 12 };
       f2 = { x: 3 + Math.cos(th + Math.PI) * 12, y: 23 + Math.sin(th + Math.PI) * 12 };
-      h1 = { x: 26, y: -7 };
-      h2 = { x: 29, y: -5 };
+      h1 = { x: 25, y: -6 };
+      h2 = { x: 28.5, y: -4 };
       rideBob = Math.sin(th * 2) * 1.2;
     } else if (mountId === 'moto') {
       // 驾驶姿势：深前倾、头压低贴近油箱 + 引擎微振
@@ -542,7 +542,7 @@ function drawChibi(ctx, skin, o) {
   // ---- 手臂（远臂暗、近臂亮；肘部后弯） ----
   if (riding) {
     limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.2, -0.3, 1, 6, 4.6, shadeOf(skin.fill));
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.2, -0.3, 1, 6, 4.6, outfit);
+    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.2, -0.3, 1, 6, 4.6, SKIN_TONE);
   } else if (sliding) {
     limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.18, -1, 0.15, 6, 4.6, shadeOf(skin.fill));
     limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.18, -0.5, 1, 6, 4.6, outfit);

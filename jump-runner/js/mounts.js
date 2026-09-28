@@ -230,16 +230,11 @@ function drawBicycle(ctx, run) {
 
   // 车座（骑手脚底位置）
   roundFill(ctx, -19, -48, 15, 5.5, 2.6, tire, null);
-  // 车把（前伸高出骑手胸口，明显可见）
-  ctx.strokeStyle = tire;
-  ctx.lineWidth = 3.4;
+  // 车把（金属横把，骑手双手握住的位置，明显可见）
+  roundFill(ctx, 24, -50, 16, 5, 2.5, metal, tire);
+  ctx.fillStyle = '#FFE082';
   ctx.beginPath();
-  ctx.moveTo(31, -49);
-  ctx.lineTo(35, -44);
-  ctx.stroke();
-  ctx.fillStyle = frame;
-  ctx.beginPath();
-  ctx.arc(34, -44.5, 3, 0, Math.PI * 2);
+  ctx.arc(25, -47.5, 1.6, 0, Math.PI * 2);
   ctx.fill();
   // 曲柄 + 踏板（骑手脚部与此同步）
   const ang = run * 1.5;
