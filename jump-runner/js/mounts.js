@@ -224,22 +224,22 @@ function drawBicycle(ctx, run) {
   ctx.moveTo(-12, -44); ctx.lineTo(3, -21);   // 座管
   ctx.moveTo(-12, -44); ctx.lineTo(-25, -21); // 后叉
   ctx.moveTo(3, -21); ctx.lineTo(25, -21);    // 底位线
-  ctx.moveTo(25, -21); ctx.lineTo(29, -45);   // 前叉
-  ctx.moveTo(-12, -42); ctx.lineTo(21, -43);  // 上管
+  ctx.moveTo(25, -21); ctx.lineTo(24, -44);   // 前叉
+  ctx.moveTo(-12, -42); ctx.lineTo(19, -42);  // 上管
   ctx.stroke();
 
   // 车座（骑手脚底位置）
   roundFill(ctx, -19, -48, 15, 5.5, 2.6, tire, null);
-  // 车把
+  // 车把（拉近骑手，城市车几何）
   ctx.strokeStyle = tire;
   ctx.lineWidth = 3.4;
   ctx.beginPath();
-  ctx.moveTo(29, -45);
-  ctx.lineTo(32, -47);
+  ctx.moveTo(24, -44);
+  ctx.lineTo(26.5, -46);
   ctx.stroke();
   ctx.fillStyle = frame;
   ctx.beginPath();
-  ctx.arc(32, -47, 2.6, 0, Math.PI * 2);
+  ctx.arc(26.5, -46, 2.6, 0, Math.PI * 2);
   ctx.fill();
   // 曲柄 + 踏板（骑手脚部与此同步）
   const ang = run * 1.5;

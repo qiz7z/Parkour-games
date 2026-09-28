@@ -280,8 +280,8 @@ function drawChibi(ctx, skin, o) {
       hipSway = Math.sin(th) * 1.6;
       f1 = { x: 3 + Math.cos(th) * 12, y: 23 + Math.sin(th) * 12 };
       f2 = { x: 3 + Math.cos(th + Math.PI) * 12, y: 23 + Math.sin(th + Math.PI) * 12 };
-      h1 = { x: 30, y: -4.5 };
-      h2 = { x: 32, y: -2.5 };
+      h1 = { x: 21.5, y: -6.5 };
+      h2 = { x: 24, y: -4.5 };
       rideBob = Math.sin(th * 2) * 1.2;
     } else if (mountId === 'moto') {
       // 驾驶姿势：深前倾、头压低贴近油箱 + 引擎微振
