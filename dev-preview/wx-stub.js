@@ -1,7 +1,11 @@
 // 浏览器环境的 wx 桩：把微信小游戏 API 映射到浏览器能力
 (function () {
   const canvas = document.getElementById('game');
-  const store = {};
+  // localStorage 持久化存档：刷新页面不丢失解锁/存档状态
+  const store = {
+    get(k) { try { return localStorage.getItem('jumpy_' + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('jumpy_' + k, v); } catch (e) {} },
+  };
   let audioCtx = null;
   let odc = null;
 
@@ -60,8 +64,8 @@
     onTouchCancel: (h) => {
       canvas.addEventListener('pointercancel', () => h({}));
     },
-    getStorageSync: (k) => (k in store ? store[k] : ''),
-    setStorageSync: (k, v) => { store[k] = v; },
+    getStorageSync: (k) => store.get(k) ?? '',
+    setStorageSync: (k, v) => { store.set(k, v); },
     createWebAudioContext: () => (audioCtx = audioCtx || new AudioContext()),
     setUserCloudStorage() { /* 浏览器预览无云存储 */ },
     // 开放数据域桩：给一块带提示文字的画布，排行榜弹层里能看到降级效果
