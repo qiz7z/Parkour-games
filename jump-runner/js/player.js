@@ -43,6 +43,9 @@ class Player {
     this.dead = false;
     this.slide = 0;       // 剩余滑铲时间
     this.slideQueued = false; // 空中下压：落地后接滑铲
+    this.flipT = 0;       // 二段跳空翻剩余时间
+    this.deadVy = 0;      // 死亡弹飞垂直速度
+    this.deadRot = 0;     // 死亡旋转角
   }
 
   // 返回 'jump' | 'double' | null（滑铲中跳跃会取消铲行）
@@ -61,6 +64,7 @@ class Player {
       this.jumps = 2;
       this.sy = 1.18;
       this.sx = 0.85;
+      this.flipT = 0.55; // 二段跳空翻
       return 'double';
     }
     return null;
@@ -97,6 +101,8 @@ class Player {
     // 挤压拉伸缓慢恢复
     this.sx += (1 - this.sx) * Math.min(1, dt * 12);
     this.sy += (1 - this.sy) * Math.min(1, dt * 12);
+    // 空翻计时
+    if (this.flipT > 0) this.flipT -= dt;
   }
 
   // opts: { skin, shield, invincible, mount: 坐骑id|null }
@@ -107,6 +113,20 @@ class Player {
     const rideH = mountId ? Mounts.get(mountId).h : 0;
     const x = this.x;
     const y = this.y;
+
+    // 死亡尸体：旋转翻滚的姿势画布
+    if (opts.deadCorpse) {
+      const corpseC = poseCanvas(skin, 'corpse', (pc) =>
+        Player.drawChibi(pc, skin, {
+          run: 0, grounded: true, vy: 0, riding: false, sliding: true, mount: null, t: 1.23,
+        }));
+      ctx.save();
+      ctx.translate(x, y - 18);
+      ctx.rotate(this.deadRot || 0);
+      ctx.drawImage(corpseC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
+      ctx.restore();
+      return;
+    }
 
     // 地面投影（骑乘时更宽）
     if (overGround || y <= this.groundY) {
@@ -182,6 +202,13 @@ class Player {
         ctx.save();
         ctx.translate(x, y);
         ctx.scale(this.sx, this.sy);
+        // 二段跳空翻：绕身体中心翻转一周
+        if (this.flipT > 0 && !this.grounded) {
+          const prog = 1 - this.flipT / 0.55;
+          ctx.translate(0, -14);
+          ctx.rotate(-prog * Math.PI * 2);
+          ctx.translate(0, 14);
+        }
         ctx.drawImage(bodyC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
         ctx.restore();
       }

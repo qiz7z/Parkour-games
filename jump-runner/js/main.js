@@ -67,6 +67,8 @@ function createGame(canvas, ctx, W, H, opts) {
     lastMilestone: 0,
     fadeT: 0,
     zoneHintT: 0,
+    combo: 0,
+    comboTimer: 0,
     // 好友排行（真机为开放数据域上下文；预览环境为桩）
     odc: null,
   };
@@ -100,6 +102,8 @@ function createGame(canvas, ctx, W, H, opts) {
     game.pressedKey = null;
     game.fadeT = 0.18; // 开局淡入
     game.zoneHintT = 3.5; // 双区操作提示
+    game.combo = 0;
+    game.comboTimer = 0;
     // 装备坐骑（存档已保证 owned 合法）
     const m = Mounts.get(profile.mount);
     game.mountId = m.id === 'none' ? null : m.id;
@@ -157,8 +161,10 @@ function createGame(canvas, ctx, W, H, opts) {
     game.deathTimer = 0;
     game.deathCause = cause;
     game.player.dead = true;
+    game.player.deadVy = -620;   // 尸体弹飞初速
+    game.player.deadRot = 0;
     sound.stopBgm();
-    // 死亡顿帧：先定格 70ms，再爆粒子 + 震屏（打击感）
+    // 死亡演出：弹飞翻滚 0.55s → 落点爆裂 + 震屏（打击感）
     game.deathFxPending = true;
     game.deathPos = { x: game.player.x, y: Math.max(Math.min(game.player.y, H - 30), 60) };
     // 结算入档：飞行中的金币直接到账
@@ -291,6 +297,10 @@ function createGame(canvas, ctx, W, H, opts) {
     }
     if (game.fadeT > 0) game.fadeT -= dt;
     if (game.zoneHintT > 0) game.zoneHintT -= dt;
+    if (game.comboTimer > 0) {
+      game.comboTimer -= dt;
+      if (game.comboTimer <= 0) game.combo = 0;
+    }
     if (game.coinPulse > 0) game.coinPulse -= dt;
     if (game.shake) {
       game.shake.t -= dt;
@@ -313,12 +323,20 @@ function createGame(canvas, ctx, W, H, opts) {
 
     if (game.state === 'over') {
       game.deathTimer += dt;
-      // 顿帧结束后再爆粒子 + 震屏
-      if (game.deathFxPending && game.deathTimer >= 0.07) {
-        game.deathFxPending = false;
-        game.fx.burst(game.deathPos.x, game.deathPos.y);
-        game.shake = { t: 0.32, dur: 0.32, power: 9 };
-        sound.hit();
+      // 尸体弹飞：翻滚着飞出去，0.55s 后在落点爆裂 + 震屏
+      if (game.deathFxPending) {
+        if (game.deathTimer < 0.55) {
+          const p = game.player;
+          p.deadVy += 2400 * dt;
+          p.y += p.deadVy * dt;
+          p.x += 42 * dt;
+          p.deadRot += 8.5 * dt;
+        } else {
+          game.deathFxPending = false;
+          game.fx.burst(Math.min(game.player.x, W - 10), Math.max(Math.min(game.player.y, H - 20), 40));
+          game.shake = { t: 0.32, dur: 0.32, power: 9 };
+          sound.hit();
+        }
       }
       game.fx.update(dt, 0);
       return;
@@ -349,8 +367,8 @@ function createGame(canvas, ctx, W, H, opts) {
       fc.t += dt / 0.42;
     }
     while (game.flyCoins.length && game.flyCoins[0].t >= 1) {
-      game.flyCoins.shift();
-      game.coinCount++;
+      const fc = game.flyCoins.shift();
+      game.coinCount += fc.bonus || 1; // 连击奖励金币多颗到账
       game.coinPulse = 0.3;
     }
 
@@ -487,6 +505,14 @@ function createGame(canvas, ctx, W, H, opts) {
       game.fx.text(sx, c.y - 16, '+1');
       sound.coin();
       game.flyCoins.push({ x0: sx, y0: c.y, t: 0 });
+      // 连击：1 秒内连续拾取累积，每 5 连击奖励 3 金币
+      game.combo++;
+      game.comboTimer = 1.0;
+      if (game.combo > 0 && game.combo % 5 === 0) {
+        game.comboBonus = 3;
+        game.flyCoins.push({ x0: sx, y0: c.y - 24, t: 0, bonus: 3 });
+        game.fx.text(sx, c.y - 34, '连击x' + game.combo, '#FF7043');
+      }
     }
     for (const it of res.items) {
       const sx = it.x - game.scroll;
@@ -559,6 +585,7 @@ function createGame(canvas, ctx, W, H, opts) {
         shield: game.shield,
         invincible: game.invincible,
         mount: mountOpt,
+        deadCorpse: game.deathFxPending,
       });
     }
     game.fx.draw(ctx2);

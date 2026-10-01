@@ -34,7 +34,7 @@ function tone(freq, dur, type, vol, slide) {
 }
 
 module.exports = {
-  jump() { tone(460, 0.1, 'square', 0.08, 220); },
+  jump() { tone(440 + Math.random() * 60, 0.1, 'square', 0.08, 220); },
   doubleJump() { tone(620, 0.1, 'square', 0.08, 300); },
   coin() {
     tone(988, 0.07, 'sine', 0.1);
