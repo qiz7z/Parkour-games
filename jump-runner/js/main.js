@@ -375,7 +375,7 @@ function createGame(canvas, ctx, W, H, opts) {
     const p = game.player;
     // 骑乘鞍座高度（滑铲时压低）——平台落点计算要用
     const rideHOf = (sl) => (game.riding
-      ? (sl ? Math.max(10, Math.round(Mounts.get(game.mountId).h * 0.78)) : Mounts.get(game.mountId).h)
+      ? (sl ? Math.max(8, Math.round(Mounts.get(game.mountId).h * 0.6)) : Mounts.get(game.mountId).h)
       : 0);
     const prevFeet = p.y + rideHOf(p.slide > 0);
     p.update(dt, effSpeed);

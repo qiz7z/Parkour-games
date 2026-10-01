@@ -23,7 +23,7 @@ function draw(ctx, id, cx, bottomY, time, opts) {
   ctx.translate(cx, bottomY);
   if (opts.squash) {
     // 铲行时坐骑轻微压低（保留车轮形状，避免"压扁贴图"感）
-    ctx.scale(1, 0.78);
+    ctx.scale(1, 0.6);
   }
   if (id === 'pony') drawPony(ctx, run, grounded);
   else if (id === 'dino') drawDino(ctx, run, grounded);

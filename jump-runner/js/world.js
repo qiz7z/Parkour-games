@@ -170,10 +170,17 @@ class World {
     let by = sliding ? player.y - 16 : player.y - 40;
     const bw = 24;
     let bh = sliding ? 14 : 38;
-    // 骑乘时坐骑身体（鞍座到接触面）延伸碰撞盒：尖刺/木箱在骑乘时同样命中
+    // 骑乘碰撞规则：站立时坐骑身体（鞍座到接触面）延伸碰撞盒——尖刺/木箱/广告牌都命中坐骑；
+    // 滑铲时用贴地低盒——可从广告牌下钻过（与步行滑铲一致）
     if (player.mountBody && player.mountBodyH) {
-      const extend = player.y + player.mountBodyH - (by + bh);
-      if (extend > 0) bh += extend;
+      if (sliding) {
+        const surface = player.y + player.mountBodyH;
+        by = surface - 16;
+        bh = 14;
+      } else {
+        const extend = player.y + player.mountBodyH - (by + bh);
+        if (extend > 0) bh += extend;
+      }
     }
     for (const o of this.obstacles) {
       const sx = o.x - this.scroll;

@@ -665,7 +665,20 @@ console.log('21) 骑乘碰撞：坐骑身体参与（尖刺也命中坐骑）');
   g1.render();
 }
 
-console.log(failures === 0 ? '\n全部通过 ✔' : '\n有 ' + failures + ' 项失败 ✘');
-process.exit(failures === 0 ? 0 : 1);
+console.log('22) 骑乘滑铲：可钻广告牌（低盒规则）');
+{
+  const g1 = newGame();
+  g1.profile.mount = 'bicycle';
+  g1.profile.ownedMounts = ['none', 'bicycle'];
+  g1.onTap(0, 0);
+  for (let i = 0; i < 30; i++) g1.update(1 / 60);
+  g1.doSlide();
+  g1.world.obstacles.push({ type: 'sign', x: g1.scroll + g1.player.x + g1.speed * 0.3, w: 90, h: 160, gap: 30 });
+  let t = 0;
+  while (t < 2 && g1.state === 'play') { g1.update(1 / 60); t += 1 / 60; }
+  check(g1.state === 'play', '骑乘滑铲钻过广告牌');
+  g1.render();
+}
+
 console.log(failures === 0 ? '\n全部通过 ✔' : '\n有 ' + failures + ' 项失败 ✘');
 process.exit(failures === 0 ? 0 : 1);
