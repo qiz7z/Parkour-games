@@ -908,10 +908,10 @@ const torsoGradCache = {};
 // ---- 姿势超采样缓存：每个（皮肤,姿势）预渲染到 3 倍分辨率离屏画布 ----
 // 主循环只做 drawImage 缩放贴图：边缘平滑、细节精致、渲染成本反而更低
 const POSE_SCALE = 3;
-const POSE_BOX_W = 44;  // 精灵框宽（骑乘踏板下探到 +35，故框比站立人物大）
-const POSE_BOX_H = 104; // 精灵框高（原点上方 64、下方 40）
-const POSE_OX = 22;     // 原点（脚底/鞍座）在框内 x
-const POSE_OY = 64;     // 原点在框内 y
+const POSE_BOX_W = 112; // 精灵框宽（滑铲/骑乘前倾时发刺前伸到 x±44）
+const POSE_BOX_H = 124; // 精灵框高（骑乘 1.14 放大后发刺上探到 -80、踏板下探到 +35）
+const POSE_OX = 56;     // 原点（脚底/鞍座）在框内 x（居中）
+const POSE_OY = 84;     // 原点在框内 y
 const poseCache = new Map();
 if (typeof window !== 'undefined') window.__poseCache = poseCache; // 调试用
 
