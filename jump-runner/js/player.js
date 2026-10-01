@@ -467,7 +467,7 @@ function drawChibi(ctx, skin, o) {
     ctx.fillStyle = hairC;
     ctx.fill();
     for (const sa of [-2.75, -2.35, -0.75, -0.35]) {
-      hairSpike(ctx, HX, HY, FACE_R + 2, sa, 9, hairC);
+      hairSpike(ctx, HX, HY, FACE_R + 2, sa, 9, hairC, hairLite);
     }
   }
 
@@ -626,14 +626,14 @@ function drawChibi(ctx, skin, o) {
     // 冠部发刺扇（向上炸开的多缕尖刺）
     const fan = [-2.62, -2.28, -1.94, -0.86, -0.52, -0.2];
     fan.forEach((sa, i) => {
-      hairSpike(ctx, HX, HY, FACE_R + 0.5, sa, 8 + (i % 2) * 3.5, hairC);
+      hairSpike(ctx, HX, HY, FACE_R + 0.5, sa, 8 + (i % 2) * 3.5, hairC, hairLite);
     });
-    hairSpike(ctx, HX, HY, FACE_R + 0.5, -1.57, 11.5, hairC);
+    hairSpike(ctx, HX, HY, FACE_R + 0.5, -1.57, 11.5, hairC, hairLite);
     // 齿状刘海 + 光泽带
     bangSpikes(ctx, HX, HY + 1, FACE_R - 1.5, hairC, hairLite);
     // 侧发（框脸两缕长刺）
-    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.92, 13, hairC);
-    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.08, 13, hairC);
+    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.92, 13, hairC, hairLite);
+    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.08, 13, hairC, hairLite);
   } else if (kind === 'boy_hood') {
     // 兜帽沿 + 深色刘海
     ctx.strokeStyle = outfit;
@@ -757,14 +757,19 @@ function drawChibi(ctx, skin, o) {
     ctx.ellipse(ex, ey, 3.0, 4.2, 0, 0, PI2);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
-    // 虹膜：垂直渐变（上深下亮，动漫眼核心特征）
-    const ig = ctx.createLinearGradient(0, ey - 3.2, 0, ey + 3.6);
-    ig.addColorStop(0, eyeDeep);
-    ig.addColorStop(0.5, eyeMain);
-    ig.addColorStop(1, skins.rgb(mixc(skin.eye || [70, 55, 48], [255, 255, 230], 0.45)));
+    // 虹膜：径向渐变（心深缘亮）+ 底缘反光弧（动漫眼核心特征）
+    const ig = ctx.createRadialGradient(ex + 0.5, ey + 1.8, 0.4, ex + 0.5, ey + 0.6, 3.1);
+    ig.addColorStop(0, eyeMain);
+    ig.addColorStop(0.75, eyeMain);
+    ig.addColorStop(1, skins.rgb(mixc(skin.eye || [70, 55, 48], [255, 255, 230], 0.5)));
     ctx.beginPath();
     ctx.ellipse(ex + 0.4, ey + 0.4, 2.55, 3.3, 0, 0, PI2);
     ctx.fillStyle = ig;
+    ctx.fill();
+    // 上缘暗环（虹膜顶部加深）
+    ctx.beginPath();
+    ctx.ellipse(ex + 0.4, ey - 0.4, 2.3, 1.6, 0, 0, PI2);
+    ctx.fillStyle = eyeDeep;
     ctx.fill();
     // 瞳孔
     ctx.beginPath();
@@ -836,28 +841,34 @@ function drawChibi(ctx, skin, o) {
 }
 
 // 动漫发刺：从头皮沿角度 a 长出的弯曲尖刺（一缕头发）
-function hairSpike(ctx, cx, cy, r, a, len, color) {
+function hairSpike(ctx, cx, cy, r, a, len, color, lite) {
   const tx = cx + Math.cos(a) * (r + len);
   const ty = cy + Math.sin(a) * (r + len);
   const b1x = cx + Math.cos(a - 0.3) * (r - 2);
   const b1y = cy + Math.sin(a - 0.3) * (r - 2);
   const b2x = cx + Math.cos(a + 0.3) * (r - 2);
   const b2y = cy + Math.sin(a + 0.3) * (r - 2);
+  const m1x = cx + Math.cos(a - 0.1) * (r + len * 0.62);
+  const m1y = cy + Math.sin(a - 0.1) * (r + len * 0.62);
+  const m2x = cx + Math.cos(a + 0.12) * (r + len * 0.55);
+  const m2y = cy + Math.sin(a + 0.12) * (r + len * 0.55);
   ctx.beginPath();
   ctx.moveTo(b1x, b1y);
-  ctx.quadraticCurveTo(
-    cx + Math.cos(a - 0.1) * (r + len * 0.62),
-    cy + Math.sin(a - 0.1) * (r + len * 0.62),
-    tx, ty
-  );
-  ctx.quadraticCurveTo(
-    cx + Math.cos(a + 0.12) * (r + len * 0.55),
-    cy + Math.sin(a + 0.12) * (r + len * 0.55),
-    b2x, b2y
-  );
+  ctx.quadraticCurveTo(m1x, m1y, tx, ty);
+  ctx.quadraticCurveTo(m2x, m2y, b2x, b2y);
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
+  // 受光边：沿刺的上缘一条细亮线（发丝光泽）
+  if (lite) {
+    ctx.strokeStyle = lite;
+    ctx.lineWidth = 1.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(b1x, b1y);
+    ctx.quadraticCurveTo(m1x, m1y, tx * 0.72 + cx * 0.28, ty * 0.72 + cy * 0.28);
+    ctx.stroke();
+  }
 }
 
 // 齿状刘海：额头上一排向下弯尖（动漫刘海）
@@ -907,7 +918,7 @@ const torsoGradCache = {};
 
 // ---- 姿势超采样缓存：每个（皮肤,姿势）预渲染到 3 倍分辨率离屏画布 ----
 // 主循环只做 drawImage 缩放贴图：边缘平滑、细节精致、渲染成本反而更低
-const POSE_SCALE = 3;
+const POSE_SCALE = 4;
 const POSE_BOX_W = 112; // 精灵框宽（滑铲/骑乘前倾时发刺前伸到 x±44）
 const POSE_BOX_H = 124; // 精灵框高（骑乘 1.14 放大后发刺上探到 -80、踏板下探到 +35）
 const POSE_OX = 56;     // 原点（脚底/鞍座）在框内 x（居中）
