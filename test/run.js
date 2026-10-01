@@ -377,7 +377,7 @@ console.log('12) 坐骑商店：切标签/购买/骑乘/小马驹特权');
   game.onTap(100, 300);
   check(game.state === 'play' && game.riding === true && game.mountId === 'pony', '开局骑乘小马驹');
   for (let i = 0; i < 30; i++) { aiTap(game); game.update(1 / 60); }
-  check(game.player.grounded && Math.abs(game.player.y - (game.groundY - 28)) < 0.01,
+  check(game.player.grounded && Math.abs(game.player.y - (game.groundY - 38)) < 0.01,
     '角色落在鞍座面上（y=' + game.player.y.toFixed(1) + '）');
   game.onTap(0, 0);
   check(Math.abs(game.player.vy + 900 * 1.08) < 0.01, '小马驹特权：跳跃高度 +8%');
@@ -614,9 +614,9 @@ console.log('19) 平台箱：落上可站/走出掉落/侧撞会死/骑乘可落
   while (t < 1.5 && g3.state === 'play') {
     g3.update(1 / 60);
     t += 1 / 60;
-    if (g3.player.grounded && Math.abs(g3.player.y - (g3.groundY - 46 - 28)) < 3) break;
+    if (g3.player.grounded && Math.abs(g3.player.y - (g3.groundY - 46 - 38)) < 3) break;
   }
-  const onTopRide = Math.abs(g3.player.y - (g3.groundY - 46 - 28)) < 3;
+  const onTopRide = Math.abs(g3.player.y - (g3.groundY - 46 - 38)) < 3;
   check(g3.state === 'play' && g3.player.grounded && onTopRide, '骑乘落在平台箱顶（鞍座高度）');
   g3.render();
 }

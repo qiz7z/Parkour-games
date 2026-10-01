@@ -3,10 +3,10 @@
 
 const MOUNTS = [
   { id: 'none',    name: '步行',   price: 0,   h: 0,  perk: '轻装上阵' },
-  { id: 'pony',    name: '小马驹', price: 150, h: 28, perk: '跳跃高度 +8%' },
+  { id: 'pony',    name: '小马驹', price: 150, h: 38, perk: '跳跃高度 +8%' },
   { id: 'bicycle', name: '自行车', price: 150, h: 44, perk: '磁铁时间 +50%' },
   { id: 'moto',    name: '小摩托', price: 300, h: 30, perk: '速度 +8%' },
-  { id: 'dino',    name: '小恐龙', price: 300, h: 28, perk: '开局自带护盾' },
+  { id: 'dino',    name: '小恐龙', price: 300, h: 36, perk: '开局自带护盾' },
 ];
 
 function get(id) {
@@ -39,93 +39,93 @@ function strokeRound(ctx, color, w) {
   ctx.lineJoin = 'round';
 }
 
-// ---- 小马驹：四腿小跑 + 鬃毛 + 马尾 ----
+// ---- 小马驹：四腿小跑 + 鬃毛 + 马尾（放大版，撑得起骑手） ----
 function drawPony(ctx, run, grounded) {
   const body = '#C68B59';
   const dark = '#8A5A32';
   const mane = '#F2D0A4';
 
   // 四条腿（小跑摆动）
-  strokeRound(ctx, dark, 5);
-  const xs = [-18, -11, 10, 17];
+  strokeRound(ctx, dark, 6);
+  const xs = [-25, -16, 13, 22];
   const phases = [0, 0.5, Math.PI, Math.PI + 0.5];
   for (let i = 0; i < 4; i++) {
     ctx.beginPath();
-    ctx.moveTo(xs[i], -13);
+    ctx.moveTo(xs[i], -18);
     if (grounded) {
-      const s = Math.sin(run + phases[i]);
-      ctx.lineTo(xs[i] + s * 9, -1 - Math.max(0, Math.cos(run + phases[i])) * 4);
+      const s2 = Math.sin(run + phases[i]);
+      ctx.lineTo(xs[i] + s2 * 9, -1 - Math.max(0, Math.cos(run + phases[i])) * 4);
     } else {
-      ctx.lineTo(xs[i] + 2, -8); // 空中收腿
+      ctx.lineTo(xs[i] + 2, -11);
     }
     ctx.stroke();
   }
 
   // 马尾
-  strokeRound(ctx, mane, 3.5);
-  for (const dy of [-6, -2, 2]) {
+  strokeRound(ctx, mane, 4.5);
+  for (const dy of [-8, -3, 2]) {
     ctx.beginPath();
-    ctx.moveTo(-24, -22);
-    ctx.lineTo(-30, -22 + dy);
+    ctx.moveTo(-32, -30);
+    ctx.lineTo(-40, -30 + dy);
     ctx.stroke();
   }
 
-  // 身体 + 鞍
-  roundFill(ctx, -24, -27, 48, 20, 10, body, dark);
-  roundFill(ctx, -9, -30, 18, 5, 2, dark, null);
+  // 身体 + 鞍垫
+  roundFill(ctx, -31, -37, 62, 27, 13, body, dark);
+  roundFill(ctx, -13, -41, 25, 6.5, 3.2, dark, null);
 
   // 脖颈 + 头
   ctx.beginPath();
-  ctx.moveTo(10, -24);
-  ctx.lineTo(19, -36);
-  ctx.lineTo(24, -32);
-  ctx.lineTo(16, -22);
+  ctx.moveTo(13, -32);
+  ctx.lineTo(25, -48);
+  ctx.lineTo(32, -43);
+  ctx.lineTo(21, -30);
   ctx.closePath();
   ctx.fillStyle = body;
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(21, -37, 8, 0, Math.PI * 2);
+  ctx.arc(28, -50, 10.5, 0, Math.PI * 2);
+  ctx.fillStyle = body;
+  ctx.fill();
+  ctx.strokeStyle = dark;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // 口鼻
+  roundFill(ctx, 33, -53, 12, 9, 4, '#E8C39A', dark);
+  ctx.fillStyle = dark;
+  ctx.beginPath();
+  ctx.arc(41, -48.5, 1.4, 0, Math.PI * 2);
+  ctx.fill();
+  // 耳朵
+  ctx.beginPath();
+  ctx.moveTo(18, -58);
+  ctx.lineTo(24, -56);
+  ctx.lineTo(20, -64);
+  ctx.closePath();
   ctx.fillStyle = body;
   ctx.fill();
   ctx.strokeStyle = dark;
   ctx.lineWidth = 2;
   ctx.stroke();
-  // 口鼻
-  roundFill(ctx, 25, -39, 9, 7, 3, '#E8C39A', dark);
-  ctx.fillStyle = dark;
-  ctx.beginPath();
-  ctx.arc(31, -35.5, 1, 0, Math.PI * 2);
-  ctx.fill();
-  // 耳朵
-  ctx.beginPath();
-  ctx.moveTo(14, -43);
-  ctx.lineTo(18, -42);
-  ctx.lineTo(15, -48);
-  ctx.closePath();
-  ctx.fillStyle = body;
-  ctx.fill();
-  ctx.strokeStyle = dark;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
   // 眼睛
   ctx.fillStyle = '#FFFFFF';
   ctx.beginPath();
-  ctx.arc(22, -39, 2.8, 0, Math.PI * 2);
+  ctx.arc(29, -52, 3.6, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#33272A';
+  ctx.fillStyle = dark;
   ctx.beginPath();
-  ctx.arc(23, -39, 1.4, 0, Math.PI * 2);
+  ctx.arc(30, -52, 1.8, 0, Math.PI * 2);
   ctx.fill();
   // 鬃毛
   ctx.fillStyle = mane;
-  for (const p of [[9, -29], [13, -34], [17, -40]]) {
+  for (const p of [[11, -39], [16, -46], [22, -53]]) {
     ctx.beginPath();
-    ctx.arc(p[0], p[1], 3.6, 0, Math.PI * 2);
+    ctx.arc(p[0], p[1], 4.6, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 
-// ---- 小恐龙：背刺 + 呆萌大头 ----
+// ---- 小恐龙：背刺 + 呆萌大头（放大版） ----
 function drawDino(ctx, run, grounded) {
   const body = '#7CB342';
   const dark = '#558B2F';
@@ -134,57 +134,57 @@ function drawDino(ctx, run, grounded) {
 
   // 尾巴
   ctx.beginPath();
-  ctx.moveTo(-22, -21);
-  ctx.lineTo(-35, -15);
-  ctx.lineTo(-22, -11);
+  ctx.moveTo(-27, -27);
+  ctx.lineTo(-43, -19);
+  ctx.lineTo(-27, -13);
   ctx.closePath();
   ctx.fillStyle = body;
   ctx.fill();
   ctx.strokeStyle = dark;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
   // 四条短腿
   ctx.fillStyle = dark;
-  const xs = [-18, -11, 10, 17];
+  const xs = [-23, -14, 12, 21];
   for (let i = 0; i < 4; i++) {
-    const wob = grounded ? Math.sin(run + i * 1.6) * 1.5 : 0;
-    roundFill(ctx, xs[i] - 3 + wob, -10, 6, 10, 3, dark, null);
+    const wob = grounded ? Math.sin(run + i * 1.6) * 2 : 0;
+    roundFill(ctx, xs[i] - 4 + wob, -14, 8, 13, 4, dark, null);
   }
 
   // 身体 + 肚皮
-  roundFill(ctx, -24, -27, 48, 22, 11, body, dark);
-  roundFill(ctx, -14, -13, 28, 8, 4, belly, null);
+  roundFill(ctx, -29, -34, 58, 27, 13, body, dark);
+  roundFill(ctx, -17, -17, 34, 10, 5, belly, null);
 
   // 背刺（中间留出鞍座空位）
   ctx.fillStyle = spike;
-  for (const x of [-21, 12]) {
+  for (const x of [-26, 15]) {
     ctx.beginPath();
-    ctx.moveTo(x, -27);
-    ctx.lineTo(x + 7, -27);
-    ctx.lineTo(x + 3.5, -34);
+    ctx.moveTo(x, -34);
+    ctx.lineTo(x + 9, -34);
+    ctx.lineTo(x + 4.5, -43);
     ctx.closePath();
     ctx.fill();
   }
 
   // 头
-  roundFill(ctx, 10, -39, 20, 15, 7, body, dark);
+  roundFill(ctx, 13, -48, 25, 19, 8, body, dark);
   ctx.fillStyle = '#FFFFFF';
   ctx.beginPath();
-  ctx.arc(21, -33, 3, 0, Math.PI * 2);
+  ctx.arc(26, -41, 3.8, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#33272A';
   ctx.beginPath();
-  ctx.arc(22, -33, 1.5, 0, Math.PI * 2);
+  ctx.arc(27, -41, 1.9, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = dark;
   ctx.beginPath();
-  ctx.arc(27, -28, 1, 0, Math.PI * 2);
+  ctx.arc(33, -34, 1.3, 0, Math.PI * 2);
   ctx.fill();
-  strokeRound(ctx, dark, 1.5);
+  strokeRound(ctx, dark, 1.8);
   ctx.beginPath();
-  ctx.moveTo(24, -26);
-  ctx.lineTo(28, -26.5);
+  ctx.moveTo(29, -31);
+  ctx.lineTo(34, -31.5);
   ctx.stroke();
 }
 
