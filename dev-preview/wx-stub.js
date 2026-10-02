@@ -29,15 +29,9 @@
     resizeTimer = setTimeout(() => location.reload(), 200);
   });
 
-  // 后台标签页里 rAF 不触发，游戏循环会完全停摆（自动化验证时画面全黑）：
-  // 隐藏状态下退化为 setTimeout 驱动，保证预览始终有帧
-  const nativeRaf = window.requestAnimationFrame.bind(window);
-  window.requestAnimationFrame = (cb) => {
-    if (document.visibilityState === 'hidden') {
-      return setTimeout(() => cb(Date.now()), 16);
-    }
-    return nativeRaf(cb);
-  };
+  // IAB/遮挡窗口里原生 rAF 可能被节流不触发（visibilityState 仍报 visible），
+  // 游戏循环会完全停摆：预览统一退化为 setTimeout 泵帧，保证始终有画面
+  window.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 16);
 
   let mainCanvasUsed = false;
   window.wx = {

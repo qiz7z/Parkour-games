@@ -696,6 +696,7 @@ function start() {
   }
   Sprites.load(); // 异步加载角色素材帧
   Sprites.loadAvatars(); // 异步加载 AI 立绘头像
+  Player.loadActors(); // 异步加载 AI 全身姿势图（跑步/跳跃/骑乘）
   api.__game = game; // 测试/浏览器预览用
   sound.setMuted(!!game.profile.mute); // 同步静音状态
   if (typeof window !== 'undefined') {
@@ -772,6 +773,8 @@ function start() {
     if (dt > 0.1) dt = 0.1;
     // 浏览器预览调试：window.__pauseLoop = true 可冻结画面（不影响微信端）
     if (typeof window === 'undefined' || !window.__pauseLoop) {
+      // AI 全身姿势图加载落定后作废旧的程序化姿势缓存（落定后每帧空转）
+      Player.actorsSettled();
       // 子步长积分，保证高速下碰撞稳定
       const n = Math.max(1, Math.ceil(dt / (1 / 60)));
       const step = dt / n;

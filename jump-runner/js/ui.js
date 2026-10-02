@@ -155,6 +155,12 @@ function drawAvatar(ctx, skin, cx, cy, scale) {
 }
 
 function drawMountThumb(ctx, id, cx, bottomY, scale, time) {
+  // AI 骑乘一体图（含骑手）优先，风格与游戏内一致
+  const mi = Player.actorImg('player', 'ride-' + id);
+  if (mi) {
+    Player.drawActor(ctx, mi, cx, bottomY + 2, (Player.RIDE_DRAW_H[id] || 100) * 0.36);
+    return;
+  }
   ctx.save();
   ctx.translate(cx, bottomY);
   ctx.scale(scale, scale);

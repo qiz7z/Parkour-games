@@ -175,8 +175,13 @@ class Player {
 
     if (!blinkHide) {
       if (mountId) {
-        // 骑乘分层合成：远腿画布 → 坐骑（程序化，车轮转动）→ 近腿+身体画布
-        if (!Sprites.ready()) {
+        // AI 一体骑乘图（人+坐骑，白底抠图，底部即地面）：优先使用
+        const mi = actorImg(skin.sprite, 'ride-' + mountId);
+        if (mi) {
+          drawActor(ctx, mi, x, y + rideH, RIDE_DRAW_H[mountId] || 100,
+            this.slide > 0 ? { sx: 1.06, sy: 0.62 } : {});
+        } else if (!Sprites.ready()) {
+          // 骑乘分层合成：远腿画布 → 坐骑（程序化，车轮转动）→ 近腿+身体画布
           const farC = poseCanvas(skin, poseKey + '#far', (pc) =>
             Player.drawChibi(pc, skin, Object.assign({ pass: 'far' }, chibiOpts)));
           ctx.drawImage(farC, x - POSE_OX, y - POSE_OY, POSE_BOX_W, POSE_BOX_H);
@@ -916,6 +921,99 @@ function darkOf(skin) {
 // 躯干渐变缓存（按 皮肤id+款式 键控；同一画布上复用）
 const torsoGradCache = {};
 
+// ---- AI 全身姿势图（assets/actors/<sprite>/*.png，白底抠图） ----
+// 原图一律面朝左、脚底贴图底，绘制时统一翻转朝右、以脚底/地面为锚
+const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner/assets/actors/';
+const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
+const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
+const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
+// 骑乘一体图（含坐骑）的绘制总高（逻辑 px），底部=地面
+const RIDE_DRAW_H = { pony: 104, bicycle: 98, moto: 92, dino: 110 };
+const ACTOR_H = 70; // 站立/跑/跳姿势图绘制高
+const actorImgs = {};
+let actorCount = 0;
+let actorCacheCleared = false;
+
+function makeActorImg(src) {
+  let img = null;
+  try {
+    if (typeof wx !== 'undefined' && typeof wx.createImage === 'function') img = wx.createImage();
+    else if (typeof Image !== 'undefined') img = new Image();
+  } catch (e) {
+    return null;
+  }
+  if (!img) return null;
+  img.onload = () => { img.__done = true; };
+  img.onerror = () => {
+    // 与精灵素材相同的前缀自愈重试（微信包内 / 浏览器预览根目录不同）
+    if (!img.__retried) {
+      img.__retried = true;
+      img.src = src.indexOf('jump-runner/') === 0 ? src.replace('jump-runner/', '') : 'jump-runner/' + src;
+    } else {
+      img.__done = true;
+    }
+  };
+  img.src = src;
+  return img;
+}
+
+function loadActors() {
+  if (actorCount) return;
+  for (const sp of ACTOR_SPRITES) {
+    for (const p of ACTOR_POSES) {
+      const img = makeActorImg(ACTOR_BASE + sp + '/' + p + '.png');
+      if (img) {
+        actorImgs[sp + '|' + p] = img;
+        actorCount++;
+      }
+    }
+  }
+}
+
+function actorImg(sp, pose) {
+  const img = actorImgs[sp + '|' + pose];
+  return img && img.__done && img.naturalWidth > 0 ? img : null;
+}
+
+// 全部姿势图加载落定后作废此前缓存的程序化姿势帧（每帧探测，落定后零开销）
+function actorsSettled() {
+  if (actorCacheCleared || !actorCount) return false;
+  for (const k in actorImgs) {
+    if (!actorImgs[k].__done) return false;
+  }
+  actorCacheCleared = true;
+  poseCache.clear();
+  return true;
+}
+
+// 以脚底/地面锚点绘制姿势图；opts.sx/sy 为绕锚点的挤压拉伸
+function drawActor(ctx, img, x, y, h, opts) {
+  opts = opts || {};
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  const w = h * (iw / ih);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(opts.sx || 1, opts.sy || 1);
+  ctx.scale(-1, 1); // 原图朝左 → 朝右
+  ctx.drawImage(img, -w / 2, -h, w, h);
+  ctx.restore();
+}
+
+// 姿势量化键 → AI 姿势图名（返回 null = 该键走程序化绘制）
+function actorPoseFor(key) {
+  if (key.indexOf('run') === 0) {
+    const ph = parseInt(key.slice(3), 10);
+    if (!isNaN(ph)) return ACTOR_RUN[Math.floor(ph / 2) % 4];
+  }
+  if (key.indexOf('air') === 0) {
+    const lvl = parseInt(key.slice(3), 10);
+    if (!isNaN(lvl)) return lvl <= 2 ? 'jump' : 'fall';
+  }
+  if (key === 'slide' || key === 'corpse') return 'jump';
+  return null;
+}
+
 // ---- 姿势超采样缓存：每个（皮肤,姿势）预渲染到 3 倍分辨率离屏画布 ----
 // 主循环只做 drawImage 缩放贴图：边缘平滑、细节精致、渲染成本反而更低
 const POSE_SCALE = 4;
@@ -938,7 +1036,15 @@ function poseCanvas(skin, key, drawFn) {
     const pctx = c.getContext('2d');
     pctx.scale(POSE_SCALE, POSE_SCALE);
     pctx.translate(POSE_OX, POSE_OY);
-    drawFn(pctx);
+    // AI 全身姿势图优先；滑铲用跳跃姿势纵向压缩成低蹲
+    const pose = actorPoseFor(key);
+    const img = pose && actorImg(skin.sprite, pose);
+    if (img) {
+      if (key === 'slide') drawActor(pctx, img, 0, 0, ACTOR_H, { sx: 1.08, sy: 0.62 });
+      else drawActor(pctx, img, 0, 0, ACTOR_H, {});
+    } else {
+      drawFn(pctx);
+    }
     poseCache.set(id, c);
   }
   return c;
@@ -992,5 +1098,11 @@ function roundFill(ctx, x, y, w, h, r, fill, stroke) {
 }
 
 Player.drawChibi = drawChibi;
+Player.loadActors = loadActors;
+Player.actorsSettled = actorsSettled;
+Player.actorImg = actorImg;
+Player.drawActor = drawActor;
+Player.RIDE_DRAW_H = RIDE_DRAW_H;
+Player.ACTOR_H = ACTOR_H;
 
 module.exports = Player;
