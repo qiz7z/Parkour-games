@@ -138,6 +138,11 @@ function spacedText(ctx, str, x, y, spacing) {
 }
 
 function drawAvatar(ctx, skin, cx, cy, scale) {
+  // AI 立绘头像优先（方形圆角，中心即 cy）
+  if (Sprites.avatarsReady() && skin.sprite) {
+    Sprites.drawPortrait(ctx, skin.sprite, cx, cy, 56 * scale);
+    return;
+  }
   if (Sprites.ready() && skin.sprite) {
     Sprites.draw(ctx, skin.sprite, 'idle', cx, cy, 63 * scale, true);
     return;
@@ -464,13 +469,14 @@ function drawSkinCell(ctx, r, sk, prof) {
   const owned = prof.owned.indexOf(sk.id) >= 0;
   const using = prof.skin === sk.id;
   drawCellBase(ctx, r, using);
-  drawAvatar(ctx, sk, r.x + r.w / 2, r.y + 66, 0.85);
+  // 立绘头像（上）→ 名字（中下）→ 状态/价格（底），三者不重叠
+  drawAvatar(ctx, sk, r.x + r.w / 2, r.y + 32, 0.96);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = TEXT;
-  ctx.font = F.b(16);
-  ctx.fillText(sk.name, r.x + r.w / 2, r.y + r.h - 28);
-  drawStatusOrPrice(ctx, r, using, owned, sk.price, prof, -10, '使用中', '点击使用');
+  ctx.font = F.b(15.5);
+  ctx.fillText(sk.name, r.x + r.w / 2, r.y + 68);
+  drawStatusOrPrice(ctx, r, using, owned, sk.price, prof, -6, '使用中', '点击使用');
 }
 
 function drawMountCell(ctx, r, m, prof, time) {
@@ -478,19 +484,20 @@ function drawMountCell(ctx, r, m, prof, time) {
   const using = prof.mount === m.id;
   drawCellBase(ctx, r, using);
   if (m.id === 'none') {
-    drawAvatar(ctx, skins.get(prof.skin), r.x + r.w / 2, r.y + 68, 0.7);
+    drawAvatar(ctx, skins.get(prof.skin), r.x + r.w / 2, r.y + 24, 0.62);
   } else {
-    drawMountThumb(ctx, m.id, r.x + r.w / 2, r.y + 76, 0.8, time);
+    // 坐骑图案底部收在 r.y+38，给下方三行文字留出空间
+    drawMountThumb(ctx, m.id, r.x + r.w / 2, r.y + 38, 0.52, time);
   }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = TEXT;
   ctx.font = F.b(16);
-  ctx.fillText(m.name, r.x + r.w / 2, r.y + r.h - 40);
+  ctx.fillText(m.name, r.x + r.w / 2, r.y + r.h - 44);
   drawStatusOrPrice(ctx, r, using, owned, m.price, prof, -26, '骑乘中', '点击骑乘');
   ctx.fillStyle = FAINT;
   ctx.font = F.r(12.5);
-  ctx.fillText(m.perk, r.x + r.w / 2, r.y + r.h - 7);
+  ctx.fillText(m.perk, r.x + r.w / 2, r.y + r.h - 8);
 }
 
 function drawStatusOrPrice(ctx, r, using, owned, price, prof, offsetY, usingText, ownedText) {

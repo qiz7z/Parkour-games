@@ -695,6 +695,7 @@ function start() {
     } catch (e) { /* 忽略 */ }
   }
   Sprites.load(); // 异步加载角色素材帧
+  Sprites.loadAvatars(); // 异步加载 AI 立绘头像
   api.__game = game; // 测试/浏览器预览用
   sound.setMuted(!!game.profile.mute); // 同步静音状态
   if (typeof window !== 'undefined') {

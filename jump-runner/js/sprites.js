@@ -76,6 +76,61 @@ function draw(ctx, charId, pose, x, y, h, flip) {
   return true;
 }
 
-if (typeof window !== 'undefined') window.__Sprites = { ready, images, pending: () => pending, loadedCount: () => loadedCount, started: () => started };
 
-module.exports = { load, ready, draw, POSES, FRAME_H };
+// ---- 角色立绘头像（AI 生成，assets/avatars/，方形 384x384） ----
+const avatarImgs = {};
+let avStarted = false;
+// 头像在 assets/avatars/ 下，不在 characters/ 里，路径独立于精灵 BASE
+const AV_BASE = (typeof wx !== 'undefined') ? 'assets/avatars/' : 'jump-runner/assets/avatars/';
+
+function loadAvatars() {
+  if (avStarted) return;
+  avStarted = true;
+  const chars = ['player', 'female', 'adventurer', 'soldier', 'zombie'];
+  for (const c of chars) {
+    const img = makeImage(AV_BASE + c + '.png');
+    if (img) avatarImgs[c] = img;
+  }
+}
+
+// 绘制圆角方形头像：中心 (cx, cy)，边长 s
+function drawPortrait(ctx, charId, cx, cy, s) {
+  const img = avatarImgs[charId];
+  if (!img || !img.width) return false;
+  const rad = s * 0.12;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx - s / 2 + rad, cy - s / 2);
+  ctx.arcTo(cx + s / 2, cy - s / 2, cx + s / 2, cy + s / 2, rad);
+  ctx.arcTo(cx + s / 2, cy + s / 2, cx - s / 2, cy + s / 2, rad);
+  ctx.arcTo(cx - s / 2, cy + s / 2, cx - s / 2, cy - s / 2, rad);
+  ctx.arcTo(cx - s / 2, cy - s / 2, cx + s / 2, cy - s / 2, rad);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(img, cx - s / 2, cy - s / 2, s, s);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - s / 2 + rad, cy - s / 2);
+  ctx.arcTo(cx + s / 2, cy - s / 2, cx + s / 2, cy + s / 2, rad);
+  ctx.arcTo(cx + s / 2, cy + s / 2, cx - s / 2, cy + s / 2, rad);
+  ctx.arcTo(cx - s / 2, cy + s / 2, cx - s / 2, cy - s / 2, rad);
+  ctx.arcTo(cx - s / 2, cy - s / 2, cx + s / 2, cy - s / 2, rad);
+  ctx.stroke();
+  return true;
+}
+
+function avatarsReady() {
+  return avStarted && Object.keys(avatarImgs).length > 0 &&
+    Object.values(avatarImgs).every((im) => im.complete && im.naturalWidth > 0);
+}
+
+if (typeof window !== 'undefined') {
+  window.__Sprites = {
+    ready, images, pending: () => pending, loadedCount: () => loadedCount, started: () => started,
+    avatarsReady, loadAvatars,
+  };
+}
+
+module.exports = { load, loadAvatars, ready, avatarsReady, draw, drawPortrait, POSES, FRAME_H };

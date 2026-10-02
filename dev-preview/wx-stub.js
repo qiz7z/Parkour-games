@@ -29,6 +29,16 @@
     resizeTimer = setTimeout(() => location.reload(), 200);
   });
 
+  // 后台标签页里 rAF 不触发，游戏循环会完全停摆（自动化验证时画面全黑）：
+  // 隐藏状态下退化为 setTimeout 驱动，保证预览始终有帧
+  const nativeRaf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = (cb) => {
+    if (document.visibilityState === 'hidden') {
+      return setTimeout(() => cb(Date.now()), 16);
+    }
+    return nativeRaf(cb);
+  };
+
   let mainCanvasUsed = false;
   window.wx = {
     // 与真机一致：首次调用返回屏幕画布，后续调用返回离屏画布
