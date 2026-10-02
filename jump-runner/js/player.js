@@ -926,7 +926,7 @@ const torsoGradCache = {};
 const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner/assets/actors/';
 const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
-const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
+const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
 // 骑乘一体图（含坐骑）的绘制总高（逻辑 px），底部=地面
 const RIDE_DRAW_H = { pony: 104, bicycle: 98, moto: 92, dino: 110 };
 const ACTOR_H = 70; // 站立/跑/跳姿势图绘制高
@@ -1010,7 +1010,8 @@ function actorPoseFor(key) {
     const lvl = parseInt(key.slice(3), 10);
     if (!isNaN(lvl)) return lvl <= 2 ? 'jump' : 'fall';
   }
-  if (key === 'slide' || key === 'corpse') return 'jump';
+  if (key === 'slide') return 'slide';
+  if (key === 'corpse') return 'jump';
   return null;
 }
 
@@ -1036,11 +1037,11 @@ function poseCanvas(skin, key, drawFn) {
     const pctx = c.getContext('2d');
     pctx.scale(POSE_SCALE, POSE_SCALE);
     pctx.translate(POSE_OX, POSE_OY);
-    // AI 全身姿势图优先；滑铲用跳跃姿势纵向压缩成低蹲
+    // AI 全身姿势图优先；滑铲为独立低蹲图，按头部比例缩到站位高度的 0.68
     const pose = actorPoseFor(key);
     const img = pose && actorImg(skin.sprite, pose);
     if (img) {
-      if (key === 'slide') drawActor(pctx, img, 0, 0, ACTOR_H, { sx: 1.08, sy: 0.62 });
+      if (key === 'slide') drawActor(pctx, img, 0, 0, ACTOR_H * 0.68, {});
       else drawActor(pctx, img, 0, 0, ACTOR_H, {});
     } else {
       drawFn(pctx);
