@@ -135,8 +135,20 @@ function playLives(game, lives, maxSecPerLife) {
   return { scores, coinsTotal, renders };
 }
 
-// ================= 测试 =================
-console.log('1) 状态机：菜单 -> 点击开始 -> 游戏中');
+console.log('0) 角色跑步帧映射：地面相位使用完整人物资源');
+{
+  const Player = require('../jump-runner/js/player');
+  const expected = ['run1', 'run1', 'run2', 'run2', 'run3', 'run3', 'run4', 'run4'];
+  for (let i = 0; i < expected.length; i++) {
+    check(Player.actorPoseFor('run' + i) === expected[i],
+      'run' + i + ' 映射到 ' + expected[i]);
+  }
+  check(Player.actorPoseFor('air0') === 'jump', '上升姿势使用 jump 全身图');
+  check(Player.actorPoseFor('air4') === 'fall', '下落姿势使用 fall 全身图');
+  check(Player.actorPoseFor('slide') === 'slide', '滑铲姿势使用 slide 全身图');
+}
+
+
 {
   const game = newGame();
   check(game.state === 'menu', '初始状态为 menu');

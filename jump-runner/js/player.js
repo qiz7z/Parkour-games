@@ -245,8 +245,24 @@ class Player {
           });
           Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
         }
+      } else if (
+        this.grounded &&
+        this.slide <= 0 &&
+        actorPoseFor(poseKey) &&
+        actorImg(skin.sprite, actorPoseFor(poseKey))
+      ) {
+        // 完整 AI 跑步帧优先：头、身体和双腿保持同一套人物画风
+        const bodyC = poseCanvas(skin, poseKey, (pc) =>
+          Player.drawChibi(pc, skin, chibiOpts),
+        );
+        const bob = -Math.abs(Math.sin(this.run)) * 1.5;
+        ctx.save();
+        ctx.translate(x, y + bob);
+        ctx.scale(this.sx, this.sy);
+        ctx.drawImage(bodyC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
+        ctx.restore();
       } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
-        // 纸娃娃跑步：AI 躯干 + 程序化步态（支撑脚零滑动）
+        // 跑步帧加载失败时的回退：AI 躯干 + 程序化步态
         ctx.save();
         ctx.translate(x, y);
         ctx.scale(this.sx, this.sy);
@@ -1265,6 +1281,7 @@ Player.drawPuppet = drawPuppet;
 Player.loadActors = loadActors;
 Player.actorsSettled = actorsSettled;
 Player.actorImg = actorImg;
+Player.actorPoseFor = actorPoseFor;
 Player.drawActor = drawActor;
 Player.RIDE_DRAW_H = RIDE_DRAW_H;
 Player.ACTOR_H = ACTOR_H;
