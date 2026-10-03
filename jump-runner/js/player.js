@@ -245,14 +245,34 @@ class Player {
           });
           Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
         }
-      } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
-        // 正常跑步使用连续骨骼步态，避免完整 AI 帧硬切造成重心跳变
+      } else if (
+        this.grounded &&
+        this.slide <= 0 &&
+        actorPoseFor(poseKey) &&
+        actorImg(skin.sprite, actorPoseFor(poseKey))
+      ) {
+        // 完整人物帧主路径：保持统一的人物轮廓，切帧时只做短暂交叉过渡
+        const frame = runFrameState(this.run);
+        const currentPose = frame.current;
+        const nextPose = frame.next;
+        const currentC = poseCanvas(skin, 'run|' + currentPose, (pc) =>
+          Player.drawChibi(pc, skin, chibiOpts),
+        );
+        const nextImg = actorImg(skin.sprite, nextPose);
+        const nextC = nextImg && nextPose !== currentPose
+          ? poseCanvas(skin, 'run|' + nextPose, (pc) => Player.drawChibi(pc, skin, chibiOpts))
+          : null;
+        const bob = -Math.abs(Math.sin(this.run)) * 1.2;
         ctx.save();
-        ctx.translate(x, y);
+        ctx.translate(x, y + bob);
         ctx.scale(this.sx, this.sy);
-        drawPuppet(ctx, skin, 0, 0, this.run);
+        ctx.drawImage(currentC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
+        if (nextC && frame.blend > 0) {
+          ctx.globalAlpha = frame.blend;
+          ctx.drawImage(nextC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
+        }
         ctx.restore();
-      } else {
+      } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
         // 滑铲/空中（及其余皮肤回退）：超采样姿势画布（落地挤压拉伸作用于贴图）
         const bodyC = poseCanvas(skin, poseKey, (pc) => Player.drawChibi(pc, skin, chibiOpts));
         // 跑步上下起伏：每步一次弹跳（腾空相整体抬高，触地相贴地），否则像滑行
@@ -1060,6 +1080,7 @@ function drawActor(ctx, img, x, y, h, opts) {
 
 // 姿势量化键 → AI 姿势图名（返回 null = 该键走程序化绘制）
 function actorPoseFor(key) {
+  if (key.indexOf('run|') === 0) return key.slice(4);
   if (key.indexOf('run') === 0) {
     const ph = parseInt(key.slice(3), 10);
     if (!isNaN(ph)) return ACTOR_RUN[Math.floor(ph / 2) % 4];
@@ -1071,6 +1092,17 @@ function actorPoseFor(key) {
   if (key === 'slide') return 'slide';
   if (key === 'corpse') return 'jump';
   return null;
+}
+
+function runFrameState(run) {
+  const tau = Math.PI * 2;
+  const phase = ((run % tau) + tau) % tau / tau * 8;
+  const index = Math.floor(phase) % 8;
+  const local = phase - Math.floor(phase);
+  const current = actorPoseFor('run' + index);
+  const next = actorPoseFor('run' + ((index + 1) % 8));
+  const blend = current !== next ? smooth01(util.clamp((local - 0.72) / 0.28, 0, 1)) : 0;
+  return { index, nextIndex: (index + 1) % 8, local, current, next, blend };
 }
 
 // ---- 连续 2D 骨骼跑步：统一躯干 + 双腿 IK + 反向摆臂 ----
@@ -1285,6 +1317,7 @@ Player.loadActors = loadActors;
 Player.actorsSettled = actorsSettled;
 Player.actorImg = actorImg;
 Player.actorPoseFor = actorPoseFor;
+Player.runFrameState = runFrameState;
 Player.puppetFoot = puppetFoot;
 Player.drawActor = drawActor;
 Player.RIDE_DRAW_H = RIDE_DRAW_H;

@@ -135,24 +135,33 @@ function playLives(game, lives, maxSecPerLife) {
   return { scores, coinsTotal, renders };
 }
 
-console.log('0) 连续骨骼步态：步频相位与地面锚点契约');
+console.log('0) 完整人物跑步帧与骨骼回退契约');
 {
   const Player = require('../jump-runner/js/player');
   const expected = ['run1', 'run1', 'run2', 'run2', 'run3', 'run3', 'run4', 'run4'];
   for (let i = 0; i < expected.length; i++) {
     check(Player.actorPoseFor('run' + i) === expected[i],
-      '保留 run' + i + ' 资源映射供空中/回退使用');
+      'run' + i + ' 映射到完整人物 ' + expected[i]);
   }
   check(Player.actorPoseFor('air0') === 'jump', '上升姿势使用 jump 全身图');
   check(Player.actorPoseFor('air4') === 'fall', '下落姿势使用 fall 全身图');
   check(Player.actorPoseFor('slide') === 'slide', '滑铲姿势使用 slide 全身图');
-  check(Player.puppetFoot(0)[1] === 0, '左腿支撑相脚底在地面');
-  check(Player.puppetFoot(Math.PI)[1] === 0, '左腿换相脚底在地面');
-  check(Player.puppetFoot(Math.PI * 2)[1] === 0, '完整周期脚底回到地面');
+  const start = Player.runFrameState(0);
+  const mid = Player.runFrameState(Math.PI * 2 * 3.8 / 8);
+  const wrap = Player.runFrameState(Math.PI * 2 * 7.8 / 8);
+  check(start.current === 'run1' && start.next === 'run1' && start.blend === 0,
+    '同一完整人物帧不做过渡');
+  check(mid.current === 'run2' && mid.next === 'run3' && mid.blend > 0,
+    '实际换帧时进入平滑过渡');
+  check(wrap.current === 'run4' && wrap.next === 'run1',
+    '跑步循环正确从 run4 环回 run1');
+  check(Player.puppetFoot(0)[1] === 0, '骨骼回退支撑脚在地面');
+  check(Player.puppetFoot(Math.PI)[1] === 0, '骨骼回退换相脚底在地面');
+  check(Player.puppetFoot(Math.PI * 2)[1] === 0, '骨骼回退完整周期回到地面');
   const left = Player.puppetFoot(0.75);
   const right = Player.puppetFoot(0.75 + Math.PI);
   check(left[1] === 0 && right[1] < 0 && left[0] > right[0],
-    '左右腿相位错开半周期且一条支撑一条摆动');
+    '骨骼回退左右腿相位错开且一条支撑一条摆动');
 }
 
 {
