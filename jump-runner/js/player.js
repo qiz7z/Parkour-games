@@ -96,7 +96,7 @@ class Player {
     this.vy += 2500 * dt;
     this.y += this.vy * dt;
     if (this.grounded) {
-      this.run += dt * speed * 0.045;
+      this.run += dt * speed * 0.052; // 步频与地面滚动速度匹配（约 2.4 步/秒 @280px/s）
     }
     // 挤压拉伸缓慢恢复
     this.sx += (1 - this.sx) * Math.min(1, dt * 12);
@@ -204,8 +204,10 @@ class Player {
       } else {
         // 步行/滑铲/空中：超采样姿势画布（落地挤压拉伸作用于贴图）
         const bodyC = poseCanvas(skin, poseKey, (pc) => Player.drawChibi(pc, skin, chibiOpts));
+        // 跑步上下起伏：每步一次弹跳（腾空相整体抬高，触地相贴地），否则像滑行
+        const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 6 : 0;
         ctx.save();
-        ctx.translate(x, y);
+        ctx.translate(x, y + bob);
         ctx.scale(this.sx, this.sy);
         // 二段跳空翻：绕身体中心翻转一周
         if (this.flipT > 0 && !this.grounded) {

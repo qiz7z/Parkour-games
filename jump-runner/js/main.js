@@ -104,6 +104,7 @@ function createGame(canvas, ctx, W, H, opts) {
     game.zoneHintT = 3.5; // 双区操作提示
     game.combo = 0;
     game.comboTimer = 0;
+    game.lastStep = 0; // 脚步扬尘相位
     // 装备坐骑（存档已保证 owned 合法）
     const m = Mounts.get(profile.mount);
     game.mountId = m.id === 'none' ? null : m.id;
@@ -531,6 +532,14 @@ function createGame(canvas, ctx, W, H, opts) {
     // 疾跑扬尘（骑乘时落在蹄下/轮下）+ 小摩托尾气
     if (p.grounded && Math.random() < dt * 8) {
       game.fx.dust(p.x - 14, groundY - 2, 1);
+    }
+    // 脚步落地扬尘：与跑步相位同步（每 π 一个落步），强化跑步节奏感
+    if (p.grounded && !game.riding && p.slide <= 0) {
+      const step = Math.floor(p.run / Math.PI);
+      if (step !== game.lastStep) {
+        game.lastStep = step;
+        game.fx.dust(p.x - 10, groundY - 2, 2);
+      }
     }
     if (game.riding && game.mountId === 'moto' && p.grounded && Math.random() < dt * 6) {
       game.fx.emit(p.x - 26, rideGroundY - 8, 1, {
