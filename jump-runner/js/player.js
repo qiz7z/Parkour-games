@@ -179,7 +179,7 @@ class Player {
         const mi = actorImg(skin.sprite, 'ride-' + mountId);
         if (mi) {
           // 骑乘动感：车轮旋转 + 缓慢颠簸（约 1.7Hz）+ 车身小幅倾斜摇摆（约 1.2Hz）
-          const rb = this.grounded ? -Math.abs(Math.sin(this.run * 0.75)) * 4 : 0;
+          const rb = this.grounded ? -Math.abs(Math.sin(this.run * 0.4)) * 3 : 0;
           const rt = this.grounded ? Math.sin(this.run * 0.5) * 0.022 : 0;
           // 图片包围盒底 ≠ 车轮接地点（骑手脚/踏板更低），按接地下沉修正
           const inset = RIDE_GROUND_INSET[mountId] || 0;
@@ -249,7 +249,7 @@ class Player {
         // 步行/滑铲/空中：超采样姿势画布（落地挤压拉伸作用于贴图）
         const bodyC = poseCanvas(skin, poseKey, (pc) => Player.drawChibi(pc, skin, chibiOpts));
         // 跑步上下起伏：每步一次弹跳（腾空相整体抬高，触地相贴地），否则像滑行
-        const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 8 : 0;
+        const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 3 : 0; // 美术帧已含身高包络，只补细微起伏
         ctx.save();
         ctx.translate(x, y + bob);
         ctx.scale(this.sx, this.sy);
