@@ -178,8 +178,15 @@ class Player {
         // AI 一体骑乘图（人+坐骑，白底抠图，底部即地面）：优先使用
         const mi = actorImg(skin.sprite, 'ride-' + mountId);
         if (mi) {
-          drawActor(ctx, mi, x, y + rideH, RIDE_DRAW_H[mountId] || 100,
+          // 骑乘动感：颠簸弹跳（每步一次）+ 车身小幅倾斜摆动，否则静态图纯平移
+          const rb = this.grounded ? -Math.abs(Math.sin(this.run * 1.5)) * 5 : 0;
+          const rt = this.grounded ? Math.sin(this.run * 1.5) * 0.035 : 0;
+          ctx.save();
+          ctx.translate(x, y + rideH + rb);
+          ctx.rotate(this.slide > 0 ? rt * 0.4 : rt);
+          drawActor(ctx, mi, 0, 0, RIDE_DRAW_H[mountId] || 100,
             this.slide > 0 ? { sx: 1.06, sy: 0.62 } : {});
+          ctx.restore();
         } else if (!Sprites.ready()) {
           // 骑乘分层合成：远腿画布 → 坐骑（程序化，车轮转动）→ 近腿+身体画布
           const farC = poseCanvas(skin, poseKey + '#far', (pc) =>
@@ -930,7 +937,7 @@ const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
 const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
 // 骑乘一体图（含坐骑）的绘制总高（逻辑 px），底部=地面
-const RIDE_DRAW_H = { pony: 104, bicycle: 98, moto: 92, dino: 110 };
+const RIDE_DRAW_H = { pony: 140, bicycle: 132, moto: 124, dino: 148 }; // 与 96px 步行身高匹配
 const ACTOR_H = 96; // 站立/跑/跳姿势图绘制高
 const actorImgs = {};
 let actorCount = 0;
