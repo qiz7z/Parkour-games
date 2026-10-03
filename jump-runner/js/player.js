@@ -178,16 +178,51 @@ class Player {
         // AI 一体骑乘图（人+坐骑，白底抠图，底部即地面）：优先使用
         const mi = actorImg(skin.sprite, 'ride-' + mountId);
         if (mi) {
-          // 骑乘动感：缓慢颠簸（约 1.7Hz）+ 车身小幅倾斜摇摆（约 1.2Hz），否则静态图纯平移
+          // 骑乘动感：车轮旋转 + 缓慢颠簸（约 1.7Hz）+ 车身小幅倾斜摇摆（约 1.2Hz）
           const rb = this.grounded ? -Math.abs(Math.sin(this.run * 0.75)) * 4 : 0;
           const rt = this.grounded ? Math.sin(this.run * 0.5) * 0.022 : 0;
           // 图片包围盒底 ≠ 车轮接地点（骑手脚/踏板更低），按接地下沉修正
           const inset = RIDE_GROUND_INSET[mountId] || 0;
+          const H = RIDE_DRAW_H[mountId] || 100;
           ctx.save();
           ctx.translate(x, y + rideH + inset + rb);
           ctx.rotate(this.slide > 0 ? rt * 0.4 : rt);
-          drawActor(ctx, mi, 0, 0, RIDE_DRAW_H[mountId] || 100,
-            this.slide > 0 ? { sx: 1.06, sy: 0.62 } : {});
+          if (this.slide > 0) ctx.scale(1.06, 0.62);
+          drawActor(ctx, mi, 0, 0, H, {});
+          // 程序化车轮（轮胎环 + 辐条 + 花鼓，按滚动速度旋转）
+          const wm = RIDE_WHEELS[mountId];
+          if (wm) {
+            const iw = mi.naturalWidth || mi.width;
+            const ih = mi.naturalHeight || mi.height;
+            const sc = H / ih;
+            const w = H * (iw / ih);
+            for (let wi = 0; wi < wm.length; wi++) {
+              const X = w / 2 - wm[wi].x * sc;
+              const Y = -H + wm[wi].y * sc;
+              const ws = wm[wi].r * 2 * sc;
+              ctx.save();
+              ctx.translate(X, Y);
+              ctx.rotate(this.run * RIDE_WHEEL_SPIN);
+              ctx.strokeStyle = '#2b2833';
+              ctx.lineWidth = ws * 0.19;
+              ctx.beginPath();
+              ctx.arc(0, 0, ws * 0.38, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.lineWidth = Math.max(1, ws * 0.045);
+              for (let k = 0; k < 6; k++) {
+                const sa = (k * Math.PI) / 3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(sa) * ws * 0.3, Math.sin(sa) * ws * 0.3);
+                ctx.stroke();
+              }
+              ctx.fillStyle = '#3a3542';
+              ctx.beginPath();
+              ctx.arc(0, 0, ws * 0.1, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            }
+          }
           ctx.restore();
         } else if (!Sprites.ready()) {
           // 骑乘分层合成：远腿画布 → 坐骑（程序化，车轮转动）→ 近腿+身体画布
@@ -938,6 +973,9 @@ const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner
 const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
 const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
+// 可旋转车轮精灵（从骑乘一体图抠出，渲染时按滚动速度旋转）
+const RIDE_WHEELS = { bicycle: [{ x: 42, y: 228, r: 58 }, { x: 168, y: 222, r: 46 }] };
+const RIDE_WHEEL_SPIN = 0.72; // 角速度系数：滚动线速度与地面速度匹配
 // 骑乘一体图（含坐骑）的绘制总高（逻辑 px），底部=地面
 const RIDE_DRAW_H = { pony: 140, bicycle: 132, moto: 124, dino: 148 }; // 与 96px 步行身高匹配
 // 图片包围盒底到车轮/脚接地点的距离（游戏 px）：骑手脚/踏板垂在车轮之下
