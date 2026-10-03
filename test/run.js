@@ -135,19 +135,25 @@ function playLives(game, lives, maxSecPerLife) {
   return { scores, coinsTotal, renders };
 }
 
-console.log('0) 角色跑步帧映射：地面相位使用完整人物资源');
+console.log('0) 连续骨骼步态：步频相位与地面锚点契约');
 {
   const Player = require('../jump-runner/js/player');
   const expected = ['run1', 'run1', 'run2', 'run2', 'run3', 'run3', 'run4', 'run4'];
   for (let i = 0; i < expected.length; i++) {
     check(Player.actorPoseFor('run' + i) === expected[i],
-      'run' + i + ' 映射到 ' + expected[i]);
+      '保留 run' + i + ' 资源映射供空中/回退使用');
   }
   check(Player.actorPoseFor('air0') === 'jump', '上升姿势使用 jump 全身图');
   check(Player.actorPoseFor('air4') === 'fall', '下落姿势使用 fall 全身图');
   check(Player.actorPoseFor('slide') === 'slide', '滑铲姿势使用 slide 全身图');
+  check(Player.puppetFoot(0)[1] === 0, '左腿支撑相脚底在地面');
+  check(Player.puppetFoot(Math.PI)[1] === 0, '左腿换相脚底在地面');
+  check(Player.puppetFoot(Math.PI * 2)[1] === 0, '完整周期脚底回到地面');
+  const left = Player.puppetFoot(0.75);
+  const right = Player.puppetFoot(0.75 + Math.PI);
+  check(left[1] === 0 && right[1] < 0 && left[0] > right[0],
+    '左右腿相位错开半周期且一条支撑一条摆动');
 }
-
 
 {
   const game = newGame();
