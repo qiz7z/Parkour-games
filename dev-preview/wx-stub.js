@@ -9,13 +9,26 @@
   let audioCtx = null;
   let odc = null;
 
+  // 预览固定 1:1 渲染：面板的 devicePixelRatio 会在加载过程中漂移（1.75 → 1.0），
+  // 按 dpr 设置画布会导致画布尺寸与游戏坐标系错位（画面被裁切/错位）
   function resize() {
-    canvas.width = Math.round(innerWidth * devicePixelRatio);
-    canvas.height = Math.round(innerHeight * devicePixelRatio);
+    canvas.width = Math.round(innerWidth);
+    canvas.height = Math.round(innerHeight);
     canvas.style.width = innerWidth + 'px';
     canvas.style.height = innerHeight + 'px';
   }
   resize();
+  // 面板尺寸在页面加载后会短暂漂移（先 1200x700 再落定到真实尺寸），
+  // 游戏按旧尺寸启动后画布被缩小 → 只画出左上角（画面错位）且自检会无限重载。
+  // 方案：等尺寸落定后再校准一次，不匹配则重载（重载后尺寸已稳定，不会循环）。
+  setTimeout(() => {
+    if (innerWidth < 50 || innerHeight < 50) return;
+    if (Math.abs(canvas.width - Math.round(innerWidth)) > 2 ||
+        Math.abs(canvas.height - Math.round(innerHeight)) > 2) {
+      resize();
+      location.reload();
+    }
+  }, 400);
   // 游戏的缩放系数在启动时确定；开发预览里窗口尺寸真正变化时才刷新
   let lastW = innerWidth;
   let lastH = innerHeight;
@@ -29,9 +42,26 @@
     resizeTimer = setTimeout(() => location.reload(), 200);
   });
 
-  // IAB/遮挡窗口里原生 rAF 可能被节流不触发（visibilityState 仍报 visible），
-  // 游戏循环会完全停摆：预览统一退化为 setTimeout 泵帧，保证始终有画面
-  window.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 16);
+  // 遮挡/后台窗口里 setTimeout 会被 Chrome 节流到约 1 次/秒（游戏变成 1 FPS 幻灯片），
+  // 原生 rAF 在遮挡时也可能不触发：改用 Web Worker 计时泵帧（Worker 不受页面可见性节流）
+  const rafQueue = new Set();
+  try {
+    const workerSrc = 'setInterval(function(){ postMessage(0); }, 16);';
+    const pump = new Worker(URL.createObjectURL(new Blob([workerSrc], { type: 'text/javascript' })));
+    pump.onmessage = () => {
+      const now = Date.now();
+      for (const cb of Array.from(rafQueue)) {
+        rafQueue.delete(cb);
+        cb(now);
+      }
+    };
+    window.requestAnimationFrame = (cb) => {
+      rafQueue.add(cb);
+      return rafQueue.size;
+    };
+  } catch (e) {
+    window.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 16);
+  }
 
   let mainCanvasUsed = false;
   window.wx = {
@@ -46,7 +76,7 @@
     getWindowInfo: () => ({
       windowWidth: Math.max(1, innerWidth),
       windowHeight: Math.max(1, innerHeight),
-      pixelRatio: devicePixelRatio,
+      pixelRatio: 1, // 预览固定 1:1（见 resize 注释）
     }),
     onTouchStart: (h) => {
       canvas.addEventListener('pointerdown', (e) => {

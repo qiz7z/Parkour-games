@@ -245,8 +245,15 @@ class Player {
           });
           Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
         }
+      } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
+        // 纸娃娃跑步：AI 躯干 + 程序化步态（支撑脚零滑动）
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(this.sx, this.sy);
+        drawPuppet(ctx, skin, 0, 0, this.run);
+        ctx.restore();
       } else {
-        // 步行/滑铲/空中：超采样姿势画布（落地挤压拉伸作用于贴图）
+        // 滑铲/空中（及其余皮肤回退）：超采样姿势画布（落地挤压拉伸作用于贴图）
         const bodyC = poseCanvas(skin, poseKey, (pc) => Player.drawChibi(pc, skin, chibiOpts));
         // 跑步上下起伏：每步一次弹跳（腾空相整体抬高，触地相贴地），否则像滑行
         const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 3 : 0; // 美术帧已含身高包络，只补细微起伏
@@ -972,7 +979,7 @@ const torsoGradCache = {};
 const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner/assets/actors/';
 const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
-const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
+const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'puppet-torso', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
 // 可旋转车轮精灵（从骑乘一体图抠出，渲染时按滚动速度旋转）
 const RIDE_WHEELS = { bicycle: [{ x: 42, y: 228, r: 58 }, { x: 168, y: 222, r: 46 }] };
 const RIDE_WHEEL_SPIN = 0.72; // 角速度系数：滚动线速度与地面速度匹配
@@ -1066,6 +1073,110 @@ function actorPoseFor(key) {
   return null;
 }
 
+// ---- 纸娃娃跑步：AI 躯干（头+手臂保持画质）+ 程序化双腿步态 ----
+// 核心保证：支撑相脚掌严格贴地并以地面速度后移（零滑动），膝盖/手臂由步态数学驱动
+const PUPPET = {
+  legLen: 44,  // 髋高（腰线到地面）
+  thigh: 23,   // 大腿长
+  shin: 21,    // 小腿长
+  stride: 28,  // 半步长 = π/(2*0.056)，支撑脚后移速度恰等于地面滚动速度
+  lift: 13,    // 摆动相抬脚高度
+  skin: '#FFD9B8',
+  skinDark: '#DCA47C',
+  shorts: '#C8231C',
+  sock: '#F2F4F6',
+  shoe: '#EDF0F2',
+  shoeAccent: '#D8302A',
+};
+
+// 两段式胶囊肢体（近端粗远端细 + 关节圆）
+function puppetLimb(g, x0, y0, x1, y1, w, color) {
+  g.lineCap = 'round';
+  g.strokeStyle = color;
+  g.lineWidth = w;
+  g.beginPath();
+  g.moveTo(x0, y0);
+  g.lineTo(x1, y1);
+  g.stroke();
+}
+
+// 步态：脚掌轨迹（phase ∈ [0,2π)，一个周期两步）
+// 支撑相 [0,π)：脚从身前 +stride 匀速后移到 -stride，贴地
+// 摆动相 [π,2π)：脚离地抬起划弧前摆
+function puppetFoot(phase) {
+  if (phase < Math.PI) {
+    return [PUPPET.stride * (1 - (2 * phase) / Math.PI), 0];
+  }
+  const t = (phase - Math.PI) / Math.PI;
+  return [-PUPPET.stride * (1 - 2 * t), -PUPPET.lift * Math.sin(Math.PI * t)];
+}
+
+// 两骨 IK：髋→膝→踝，膝盖朝前弯；返回膝位置
+function puppetKnee(hx, hy, ax, ay, l1, l2) {
+  let dx = ax - hx;
+  let dy = ay - hy;
+  let d = Math.sqrt(dx * dx + dy * dy);
+  const maxD = l1 + l2 - 0.5;
+  if (d > maxD) {
+    dx *= maxD / d;
+    dy *= maxD / d;
+    d = maxD;
+  }
+  d = Math.max(d, 5);
+  const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+  const h2 = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+  const ux = dx / d, uy = dy / d;
+  return [hx + ux * a - uy * h2, hy + uy * a + ux * h2, hx + ux * d, hy + uy * d];
+}
+
+function drawPuppet(ctx, skin, x, y, run) {
+  const torso = actorImg(skin.sprite, 'puppet-torso');
+  if (!torso) return false;
+  const P = PUPPET;
+  const p = ((run % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+  // 髋部高度：触地相最低、过腿相最高（贴合跑步重心起伏）
+  const hipY = -P.legLen + Math.cos(2 * p) * 2.2;
+
+  // 单腿：髋→膝→踝→鞋（w 为肢体粗细，far 侧加深表示远离镜头）
+  function leg(phase, hipX, far) {
+    const skinC = far ? P.skinDark : P.skin;
+    const [fx, fy] = puppetFoot(phase);
+    const [kx, ky, ax, ay] = puppetKnee(hipX, hipY, fx, fy, P.thigh, P.shin);
+    puppetLimb(ctx, hipX, hipY, kx, ky, far ? 10 : 11.5, skinC);
+    puppetLimb(ctx, kx, ky, ax, ay, far ? 8 : 9, skinC);
+    // 袜口 + 鞋（摆动相脚尖微垂）
+    const swing = phase >= Math.PI ? Math.sin(Math.PI * ((phase - Math.PI) / Math.PI)) : 0;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(swing * 0.3);
+    ctx.fillStyle = P.sock;
+    ctx.beginPath();
+    ctx.arc(0, -3.4, far ? 3.6 : 4.1, 0, Math.PI * 2);
+    ctx.fill();
+    roundFill(ctx, -4, -2.6, 15, 6.4, 2.8, far ? '#D8DCE0' : P.shoe, 'rgba(90,60,40,0.35)');
+    ctx.fillStyle = P.shoeAccent;
+    roundFill(ctx, -4, 1, 15, 2.8, 1.4, far ? '#8f1f1c' : P.shoeAccent, null);
+    ctx.restore(); // 鞋子绘制前的 save（漏掉会让位移逐帧泄漏、画面整体飘出画布）
+  }
+
+  // 远腿（身后）→ 短裤髋块 → 躯干（含头/手臂，随步伐轻微俯仰）→ 近腿（身前）
+  leg(p + Math.PI, -3, true);
+  roundFill(ctx, x - 10, y + hipY - 4, 20, 14, 5.5, P.shorts, 'rgba(120,20,16,0.5)');
+  const torsoSprite = torso;
+  const s = 96 / 256;
+  const WX = 200, WH = 126; // 腰点（精灵坐标：对齐头位于 x=200，裁剪底=腰下 6px）
+  ctx.save();
+  ctx.translate(x + 1, y + hipY + 7);
+  ctx.rotate(Math.sin(p) * 0.055); // 躯干随步伐轻微俯仰
+  ctx.scale(-1, 1); // 原图朝左 → 朝右
+  ctx.drawImage(torsoSprite, -(torsoSprite.width - WX) * s, -WH * s,
+    torsoSprite.width * s, torsoSprite.height * s);
+  ctx.restore();
+  leg(p, 2, false);
+  return true;
+}
+
 // ---- 姿势超采样缓存：每个（皮肤,姿势）预渲染到 3 倍分辨率离屏画布 ----
 // 主循环只做 drawImage 缩放贴图：边缘平滑、细节精致、渲染成本反而更低
 const POSE_SCALE = 4;
@@ -1150,6 +1261,7 @@ function roundFill(ctx, x, y, w, h, r, fill, stroke) {
 }
 
 Player.drawChibi = drawChibi;
+Player.drawPuppet = drawPuppet;
 Player.loadActors = loadActors;
 Player.actorsSettled = actorsSettled;
 Player.actorImg = actorImg;
