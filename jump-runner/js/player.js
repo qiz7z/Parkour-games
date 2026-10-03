@@ -96,7 +96,7 @@ class Player {
     this.vy += 2500 * dt;
     this.y += this.vy * dt;
     if (this.grounded) {
-      this.run += dt * speed * 0.052; // 步频与地面滚动速度匹配（约 2.4 步/秒 @280px/s）
+      this.run += dt * speed * 0.056; // 步频与地面滚动速度匹配（约 2.6 步/秒 @280px/s）
     }
     // 挤压拉伸缓慢恢复
     this.sx += (1 - this.sx) * Math.min(1, dt * 12);
@@ -205,7 +205,7 @@ class Player {
         // 步行/滑铲/空中：超采样姿势画布（落地挤压拉伸作用于贴图）
         const bodyC = poseCanvas(skin, poseKey, (pc) => Player.drawChibi(pc, skin, chibiOpts));
         // 跑步上下起伏：每步一次弹跳（腾空相整体抬高，触地相贴地），否则像滑行
-        const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 6 : 0;
+        const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 8 : 0;
         ctx.save();
         ctx.translate(x, y + bob);
         ctx.scale(this.sx, this.sy);
@@ -931,7 +931,7 @@ const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
 const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
 // 骑乘一体图（含坐骑）的绘制总高（逻辑 px），底部=地面
 const RIDE_DRAW_H = { pony: 104, bicycle: 98, moto: 92, dino: 110 };
-const ACTOR_H = 70; // 站立/跑/跳姿势图绘制高
+const ACTOR_H = 96; // 站立/跑/跳姿势图绘制高
 const actorImgs = {};
 let actorCount = 0;
 let actorCacheCleared = false;
