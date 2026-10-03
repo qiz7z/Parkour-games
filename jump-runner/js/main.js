@@ -311,14 +311,21 @@ function createGame(canvas, ctx, W, H, opts) {
 
     if (game.state === 'menu' || game.state === 'shop' || game.state === 'rank') {
       // 菜单/商店/排行榜：原地小跑展示（装备坐骑时骑在鞍座上）
+      // 步频与游戏内一致（约 2 步/秒）；起伏由绘制层弹跳负责，这里不再叠加
       const menuRideH = profile.mount !== 'none' ? Mounts.get(profile.mount).h : 0;
       game.menuScroll += 40 * dt;
-      game.player.run += dt * 9;
-      game.player.y = (groundY - menuRideH) - Math.abs(Math.sin(game.time * 6)) * 4;
+      game.player.run += dt * 13;
+      game.player.y = groundY - menuRideH;
       game.player.sx += (1 - game.player.sx) * Math.min(1, dt * 12);
       game.player.sy += (1 - game.player.sy) * Math.min(1, dt * 12);
+      // 菜单演示也带落脚扬尘
+      const step = Math.floor(game.player.run / Math.PI);
+      if (step !== game.lastStep) {
+        game.lastStep = step;
+        game.fx.dust(game.player.x - 10, groundY - 2, 2);
+      }
       if (game.shopMsgTimer > 0) game.shopMsgTimer -= dt;
-      game.fx.update(dt, 0);
+      game.fx.update(dt, 40);
       return;
     }
 
