@@ -441,12 +441,15 @@ function drawChibi(ctx, skin, o) {
     roundFill(ctx, fx - 1.6, fy - 5, 3.4, 1.2, 0.6, 'rgba(255,255,255,0.9)', null);
   };
   if (riding) {
-    // 骑乘：髋部锚定鞍座（自行车随踏板微移）
+    // 骑乘：髋部锚定鞍座（自行车随踏板微移）；自行车腿加粗+膝盖前弯，踩踏清晰可见
     const hp1 = mountId === 'bicycle' ? { x: -10 + hipSway, y: -5 } : { x: -4, y: -13 };
     const hp2 = mountId === 'bicycle' ? { x: -6 + hipSway, y: -5 } : { x: 4, y: -13 };
-    if (pass !== 'near') limbIK(ctx, hp1.x, hp1.y, f1.x, f1.y - 2, 0.24, 0.9, -0.45, 6, 4.8, 'rgba(200,130,98,0.9)');
+    const legBend = mountId === 'bicycle' ? 0.38 : 0.24;
+    const wNear = mountId === 'bicycle' ? 7 : 6;
+    const wFar = mountId === 'bicycle' ? 5.5 : 4.8;
+    if (pass !== 'near') limbIK(ctx, hp1.x, hp1.y, f1.x, f1.y - 2, legBend, 0.9, -0.45, wNear, wFar, 'rgba(200,130,98,0.9)');
     if (pass !== 'far') {
-      limbIK(ctx, hp2.x, hp2.y, f2.x, f2.y - 2, 0.24, 0.9, -0.45, 6, 4.8, SKIN_TONE);
+      limbIK(ctx, hp2.x, hp2.y, f2.x, f2.y - 2, legBend, 0.9, -0.45, wNear, wFar, SKIN_TONE);
       drawShoe(f2.x, f2.y);
     }
     if (pass !== 'near') drawShoe(f1.x, f1.y);
