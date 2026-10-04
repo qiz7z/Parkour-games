@@ -245,39 +245,28 @@ class Player {
           });
           Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
         }
-      } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
-        // 连续骨骼步态（主路径）：步幅随速度自适应，支撑脚零滑动
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(this.sx, this.sy);
-        drawPuppet(ctx, skin, 0, 0, this.run);
-        ctx.restore();
       } else if (
         this.grounded &&
         this.slide <= 0 &&
         actorPoseFor(poseKey) &&
         actorImg(skin.sprite, actorPoseFor(poseKey))
       ) {
-        // 完整人物帧回退：骨骼素材缺失时使用，切帧前做短暂交叉过渡
-        const frame = runFrameState(this.run);
-        const currentPose = frame.current;
-        const nextPose = frame.next;
-        const currentC = poseCanvas(skin, 'run|' + currentPose, (pc) =>
+        // 完整原画帧主路径：干净硬切（交叉淡化会产生重影）+ 小幅起伏
+        const bodyC = poseCanvas(skin, poseKey, (pc) =>
           Player.drawChibi(pc, skin, chibiOpts),
         );
-        const nextImg = actorImg(skin.sprite, nextPose);
-        const nextC = nextImg && nextPose !== currentPose
-          ? poseCanvas(skin, 'run|' + nextPose, (pc) => Player.drawChibi(pc, skin, chibiOpts))
-          : null;
         const bob = -Math.abs(Math.sin(this.run)) * 1.2;
         ctx.save();
         ctx.translate(x, y + bob);
         ctx.scale(this.sx, this.sy);
-        ctx.drawImage(currentC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
-        if (nextC && frame.blend > 0) {
-          ctx.globalAlpha = frame.blend;
-          ctx.drawImage(nextC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
-        }
+        ctx.drawImage(bodyC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
+        ctx.restore();
+      } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
+        // 回退：手绘部件腿 + IK 骨骼步态（原画帧缺失时使用）
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(this.sx, this.sy);
+        drawPuppet(ctx, skin, 0, 0, this.run);
         ctx.restore();
       } else {
         // 滑铲/空中（及其余皮肤回退）：超采样姿势画布（落地挤压拉伸作用于贴图）
