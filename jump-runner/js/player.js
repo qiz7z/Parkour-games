@@ -96,7 +96,7 @@ class Player {
     this.vy += 2500 * dt;
     this.y += this.vy * dt;
     if (this.grounded) {
-      this.run += dt * speed * 0.078; // 步频与地面滚动速度匹配（约 3.5 步/秒 @280px/s）
+      this.run += dt * speed * 0.056; // 步频与地面滚动速度匹配（约 2.6 步/秒 @280px/s）
     }
     // 挤压拉伸缓慢恢复
     this.sx += (1 - this.sx) * Math.min(1, dt * 12);
@@ -246,6 +246,7 @@ class Player {
           Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
         }
       } else if (
+        USE_ACTOR_POSES &&
         this.grounded &&
         this.slide <= 0 &&
         actorPoseFor(poseKey) &&
@@ -261,7 +262,12 @@ class Player {
         ctx.scale(this.sx, this.sy);
         ctx.drawImage(bodyC, -POSE_OX, -POSE_OY, POSE_BOX_W, POSE_BOX_H);
         ctx.restore();
-      } else if (this.grounded && this.slide <= 0 && actorImg(skin.sprite, 'puppet-torso')) {
+      } else if (
+        USE_PUPPET &&
+        this.grounded &&
+        this.slide <= 0 &&
+        actorImg(skin.sprite, 'puppet-torso')
+      ) {
         // 回退：手绘部件腿 + IK 骨骼步态（原画帧缺失时使用）
         ctx.save();
         ctx.translate(x, y);
@@ -992,6 +998,10 @@ const torsoGradCache = {};
 
 // ---- AI 全身姿势图（assets/actors/<sprite>/*.png，白底抠图） ----
 // 原图一律面朝左、脚底贴图底，绘制时统一翻转朝右、以脚底/地面为锚
+// AI 全身帧与骨骼部件目前停用：程序化 Q 版（drawChibi）观感更稳定；
+// 坐骑一体图（ride-*) 不受此开关影响，仍然优先使用。
+const USE_ACTOR_POSES = false;
+const USE_PUPPET = false;
 const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner/assets/actors/';
 const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
@@ -1342,7 +1352,7 @@ function poseCanvas(skin, key, drawFn) {
     pctx.translate(POSE_OX, POSE_OY);
     // AI 全身姿势图优先；滑铲为独立低蹲图，按头部比例缩到站位高度的 0.68
     const pose = actorPoseFor(key);
-    const img = pose && actorImg(skin.sprite, pose);
+    const img = USE_ACTOR_POSES && pose && actorImg(skin.sprite, pose);
     if (img) {
       if (key === 'slide') drawActor(pctx, img, 0, 0, ACTOR_H * 0.68, {});
       else drawActor(pctx, img, 0, 0, ACTOR_H, {});
