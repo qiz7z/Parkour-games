@@ -175,8 +175,8 @@ class Player {
 
     if (!blinkHide) {
       if (mountId) {
-        // AI 一体骑乘图（人+坐骑，白底抠图，底部即地面）：优先使用
-        const mi = actorImg(skin.sprite, 'ride-' + mountId);
+        // AI 一体骑乘图（人+坐骑，白底抠图，底部即地面）：目前停用，走程序化坐骑
+        const mi = USE_ACTOR_RIDES && actorImg(skin.sprite, 'ride-' + mountId);
         if (mi) {
           // 骑乘动感：车轮旋转 + 缓慢颠簸（约 1.7Hz）+ 车身小幅倾斜摇摆（约 1.2Hz）
           const rb = this.grounded ? -Math.abs(Math.sin(this.run * 0.4)) * 3 : 0;
@@ -998,10 +998,10 @@ const torsoGradCache = {};
 
 // ---- AI 全身姿势图（assets/actors/<sprite>/*.png，白底抠图） ----
 // 原图一律面朝左、脚底贴图底，绘制时统一翻转朝右、以脚底/地面为锚
-// AI 全身帧与骨骼部件目前停用：程序化 Q 版（drawChibi）观感更稳定；
-// 坐骑一体图（ride-*) 不受此开关影响，仍然优先使用。
+// AI 素材（全身帧/骨骼部件/坐骑一体图）目前全部停用：程序化 Q 版观感更稳定。
 const USE_ACTOR_POSES = false;
 const USE_PUPPET = false;
+const USE_ACTOR_RIDES = false;
 const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner/assets/actors/';
 const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
@@ -1421,6 +1421,7 @@ Player.runFrameState = runFrameState;
 Player.puppetFoot = puppetFoot;
 Player.drawActor = drawActor;
 Player.RIDE_DRAW_H = RIDE_DRAW_H;
+Player.USE_ACTOR_RIDES = USE_ACTOR_RIDES;
 Player.ACTOR_H = ACTOR_H;
 
 module.exports = Player;
