@@ -96,7 +96,7 @@ class Player {
     this.vy += 2500 * dt;
     this.y += this.vy * dt;
     if (this.grounded) {
-      this.run += dt * speed * 0.056; // 步频与地面滚动速度匹配（约 2.6 步/秒 @280px/s）
+      this.run += dt * speed * 0.078; // 步频与地面滚动速度匹配（约 3.5 步/秒 @280px/s）
     }
     // 挤压拉伸缓慢恢复
     this.sx += (1 - this.sx) * Math.min(1, dt * 12);
@@ -1006,7 +1006,7 @@ const torsoGradCache = {};
 const ACTOR_BASE = (typeof wx !== 'undefined') ? 'assets/actors/' : 'jump-runner/assets/actors/';
 const ACTOR_SPRITES = ['player']; // 其余皮肤暂用程序化绘制
 const ACTOR_RUN = ['run1', 'run2', 'run3', 'run4'];
-const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'puppet-torso', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
+const ACTOR_POSES = ACTOR_RUN.concat(['jump', 'fall', 'slide', 'puppet-torso', 'leg-thigh', 'leg-shin', 'leg-thigh-far', 'leg-shin-far', 'ride-pony', 'ride-bicycle', 'ride-moto', 'ride-dino']);
 // 可旋转车轮精灵（从骑乘一体图抠出，渲染时按滚动速度旋转）
 const RIDE_WHEELS = { bicycle: [{ x: 42, y: 228, r: 58 }, { x: 168, y: 222, r: 46 }] };
 const RIDE_WHEEL_SPIN = 0.72; // 角速度系数：滚动线速度与地面速度匹配
@@ -1112,16 +1112,25 @@ function runFrameState(run) {
   return { index, nextIndex: (index + 1) % 8, local, current, next, blend };
 }
 
-// ---- 连续 2D 骨骼跑步：统一躯干 + 双腿 IK + 反向摆臂 ----
-// 支撑脚保持在地面，摆动脚用平滑曲线完成抬脚、前摆、落地。
+// ---- 连续 2D 骨骼跑步：手绘部件腿（leg-thigh/leg-shin）+ IK 步态 ----
+// 部件从站姿原画垂直切割（大腿含短裤下摆、小腿含红袜球鞋），随关节旋转；
+// 胶囊腿仅作部件缺失时的回退。支撑脚保持贴地，步幅与地面滚动严格相等。
 const PUPPET = {
-  legLen: 43,   // 髋高（腰线到地面）
-  thigh: 25.5,  // 大腿长：两端之和须 ≥ √(stride²+legLen²)，否则触地极端处 IK 钳位、脚离地漂移
-  shin: 23.5,   // 小腿长
-  stride: 28.1, // = π/(2*0.056)：支撑脚后移速度与地面滚动严格相等（零滑动）
-  lift: 14,
-  hipBob: 2,
+  stride: 20.14, // = π/(2*0.078)：支撑脚后移速度与地面滚动严格相等（零滑动）
+  lift: 10,
+  hipBob: 1.6,
   torsoLean: 0.035,
+  torsoUpright: -0.3, // 躯干立直修正：puppet-torso 自带大幅跑姿前倾，直接拼接会像后仰摔倒
+  // 手绘部件腿几何（run2 源图：髋→膝 59.2px，膝→踝 44.6px，踝→鞋底 23px）
+  partScale: 0.38,
+  partL1: 22.5,  // 游戏坐标髋→膝
+  partL2: 16.9,  // 膝→踝
+  partDrop: 8.7, // 踝→鞋底（IK 目标是踝而非接地点）
+  legLen: 40,    // 部件腿髋高：须使触地相髋踝距 ≈ 0.94×腿总长（腿近伸直），矮了会弯成坐姿 L 形
+  // 胶囊回退腿
+  thigh: 25.5,
+  shin: 23.5,
+  legLenCapsule: 43,
   outline: '#1A1210',
   skin: '#FFDFC4',
   skinShade: '#DFA070',
@@ -1210,10 +1219,42 @@ function drawPuppet(ctx, skin, x, y, run) {
   const torso = actorImg(skin.sprite, 'puppet-torso');
   if (!torso) return false;
   const P = PUPPET;
+  const thighImg = actorImg(skin.sprite, 'leg-thigh');
+  const shinImg = actorImg(skin.sprite, 'leg-shin');
+  const painted = !!(thighImg && shinImg);
   const p = ((run % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
   const swing = Math.sin(p);
-  const hipY = -P.legLen + Math.cos(2 * p) * P.hipBob;
+  const legLen = painted ? P.legLen : P.legLenCapsule;
+  const hipY = -legLen + Math.cos(2 * p) * P.hipBob;
   const hipShift = swing * 1.2;
+
+  // 手绘部件腿：大腿绕髋旋转、小腿绕膝旋转（贴图已烘焙朝右）
+  function paintedLeg(phase, hipX, far) {
+    const ti = actorImg(skin.sprite, far ? 'leg-thigh-far' : 'leg-thigh');
+    const si = actorImg(skin.sprite, far ? 'leg-shin-far' : 'leg-shin');
+    const [fx0, fy0] = puppetFoot(phase);
+    // 远腿摆幅与抬脚收小（景深：远小近大），折叠不至于甩出水平块
+    const fx = far ? fx0 * 0.88 : fx0;
+    const fy = far ? fy0 * 0.6 : fy0;
+    const s = far ? P.partScale * 0.92 : P.partScale;
+    // 支撑相末段脚跟渐抬（真实蹬地），避免拖尾端小腿被拉成水平
+    const heel = phase < Math.PI ? Math.max(0, (phase / Math.PI - 0.72) / 0.28) * 5 * smooth01((phase / Math.PI - 0.72) / 0.28) : 0;
+    // IK 目标是踝：鞋底在踝下方 partDrop 处接触地面轨迹
+    const [kx, ky, ax, ay] = puppetKnee(hipX, hipY, fx, fy - P.partDrop + heel, P.partL1, P.partL2, -1);
+    ctx.save();
+    ctx.translate(hipX, hipY);
+    ctx.rotate(Math.atan2(kx - hipX, ky - hipY));
+    ctx.drawImage(ti, -24 * s, -10 * s, 48 * s, 68 * s);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(kx, ky);
+    let shinRot = Math.atan2(ax - kx, ay - ky);
+    // 摆动相脚尖放松下垂：原画鞋从踝前伸较多，折叠时不加会横着戳出去
+    if (phase >= Math.PI) shinRot += 0.55 * Math.sin(Math.PI * ((phase - Math.PI) / Math.PI));
+    ctx.rotate(shinRot);
+    ctx.drawImage(si, -52 * s, -3 * s, 104 * s, 75 * s);
+    ctx.restore();
+  }
 
   function drawShoe(ax, ay, phase, far) {
     const inSwing = phase >= Math.PI;
@@ -1241,6 +1282,10 @@ function drawPuppet(ctx, skin, x, y, run) {
   }
 
   function leg(phase, hipX, far) {
+    if (painted) {
+      paintedLeg(phase, hipX, far);
+      return;
+    }
     const skinC = far ? P.skinDark : P.skin;
     const shortsC = far ? '#8f1f1c' : P.shorts;
     const shortsSd = far ? '#5f100e' : P.shortsShade;
@@ -1274,7 +1319,7 @@ function drawPuppet(ctx, skin, x, y, run) {
   const WX = 200, WH = 126;
   ctx.save();
   ctx.translate(x + 1 + hipShift, y + hipY + 7);
-  ctx.rotate(-swing * P.torsoLean);
+  ctx.rotate(P.torsoUpright - swing * P.torsoLean);
   ctx.scale(-1, 1);
   ctx.drawImage(torso, -(torso.width - WX) * s, -WH * s, torso.width * s, torso.height * s);
   ctx.restore();
