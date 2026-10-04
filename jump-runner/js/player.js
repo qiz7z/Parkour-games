@@ -432,9 +432,13 @@ function drawChibi(ctx, skin, o) {
 
   // ---- 腿 + 鞋（骑乘时分层：远腿在坐骑后、近腿在坐骑前，腿跨在坐骑上） ----
   const drawShoe = (fx, fy) => {
-    roundFill(ctx, fx - 2.5, fy - 5.2, 9.5, 5, 2.4, outfit, LINE);
-    roundFill(ctx, fx - 3.2, fy - 2.2, 10.5, 2.6, 1.3, LINE, null);
-    roundFill(ctx, fx - 1.2, fy - 4.4, 3.2, 1.4, 0.7, outfitLite, null);
+    // 白袜
+    roundFill(ctx, fx - 2.2, fy - 8.2, 8.4, 3.6, 1.8, '#F4F6F8', null);
+    // 白球鞋 + 品牌色带 + 深色鞋底 + 前端高光
+    roundFill(ctx, fx - 3, fy - 5.6, 10.8, 5.6, 2.6, '#F5F6F8', LINE);
+    roundFill(ctx, fx - 3, fy - 3.7, 10.8, 2.1, 1, outfit, null);
+    roundFill(ctx, fx - 3.4, fy - 1.8, 11.4, 2.4, 1.2, LINE, null);
+    roundFill(ctx, fx - 1.6, fy - 5, 3.4, 1.2, 0.6, 'rgba(255,255,255,0.9)', null);
   };
   if (riding) {
     // 骑乘：髋部锚定鞍座（自行车随踏板微移）
@@ -542,13 +546,14 @@ function drawChibi(ctx, skin, o) {
     ctx.arc(HX, HY, 17.5, 0, PI2);
     ctx.fill();
   } else if (kind === 'boy_spiky') {
+    // 脑后发团：紧凑圆弧 + 勾边（杂乱背刺去掉，王冠形由前层发刺组成）
     ctx.beginPath();
-    ctx.arc(HX, HY, FACE_R + 3.4, 0, PI2);
+    ctx.arc(HX, HY, FACE_R + 2, 0, PI2);
     ctx.fillStyle = hairC;
     ctx.fill();
-    for (const sa of [-2.75, -2.35, -0.75, -0.35]) {
-      hairSpike(ctx, HX, HY, FACE_R + 2, sa, 9, hairC, hairLite);
-    }
+    ctx.strokeStyle = hairShade;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
   }
 
   // ---- 身体（上衣+短裤 / 连衣裙）+ 阴影 + 服装细节 ----
@@ -596,7 +601,9 @@ function drawChibi(ctx, skin, o) {
       tg.addColorStop(1, skins.rgb(skin.fill));
       torsoGradCache[torsoKey] = tg;
     }
-    roundFill(ctx, -13, -29, 26, 18, 8, torsoGradCache[torsoKey], null);
+    roundFill(ctx, -13, -29, 26, 18, 8, torsoGradCache[torsoKey], LINE); // 衣身勾边
+    // 领口（颈部小圆领）
+    roundFill(ctx, -5.5, -29.8, 11, 3.2, 1.6, cloth, 'rgba(74,52,46,0.6)');
     // 衣身右侧轮廓光
     ctx.strokeStyle = 'rgba(255,246,230,0.4)';
     ctx.lineWidth = 1.4;
@@ -643,7 +650,14 @@ function drawChibi(ctx, skin, o) {
     if (kind === 'girl_twintails') {
       roundFill(ctx, -13, -14.5, 26, 3.4, 1.7, cloth, null); // 裙摆白边
     }
-    roundFill(ctx, -10, -13.5, 20, 7, 3.5, darkOf(skin), null); // 短裤
+    roundFill(ctx, -10, -13.5, 20, 7, 3.5, darkOf(skin), LINE); // 短裤勾边
+    // 裤脚高光线
+    ctx.strokeStyle = 'rgba(255,246,230,0.28)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-8.4, -7.6);
+    ctx.lineTo(8.4, -7.6);
+    ctx.stroke();
   }
 
   // ---- 手臂（远臂暗、近臂亮；肘部后弯） ----
@@ -660,7 +674,7 @@ function drawChibi(ctx, skin, o) {
     limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.22, -1, 0.3, 6, 4.6, shadeOf(skin.fill));
     limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.22, -1, 0.3, 6, 4.6, outfit);
   }
-  // 手
+  // 手（肤色 + 轮廓描边）
   ctx.fillStyle = SKIN_TONE;
   ctx.beginPath();
   ctx.arc(h1.x, h1.y, 3.2, 0, PI2);
@@ -668,6 +682,14 @@ function drawChibi(ctx, skin, o) {
   ctx.beginPath();
   ctx.arc(h2.x, h2.y, 3.2, 0, PI2);
   ctx.fill();
+  ctx.strokeStyle = SKIN_EDGE;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.arc(h1.x, h1.y, 3.2, 0, PI2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(h2.x, h2.y, 3.2, 0, PI2);
+  ctx.stroke();
 
   // ---- 头 + 脸部体块阴影 ----
   ctx.beginPath();
@@ -703,17 +725,16 @@ function drawChibi(ctx, skin, o) {
 
   // ---- 前层发型 / 帽子 / 兜帽 ----
   if (kind === 'boy_spiky') {
-    // 冠部发刺扇（向上炸开的多缕尖刺）
-    const fan = [-2.62, -2.28, -1.94, -0.86, -0.52, -0.2];
+    // 王冠式发刺：5 缕整齐向上（中间略高），收敛不炸开
+    const fan = [-2.45, -2.05, -1.57, -1.05, -0.68];
     fan.forEach((sa, i) => {
-      hairSpike(ctx, HX, HY, FACE_R + 0.5, sa, 8 + (i % 2) * 3.5, hairC, hairLite);
+      hairSpike(ctx, HX, HY, FACE_R + 0.5, sa, 7.5 + (i === 2 ? 2.5 : 0), hairC, hairLite, hairShade);
     });
-    hairSpike(ctx, HX, HY, FACE_R + 0.5, -1.57, 11.5, hairC, hairLite);
     // 齿状刘海 + 光泽带
     bangSpikes(ctx, HX, HY + 1, FACE_R - 1.5, hairC, hairLite);
-    // 侧发（框脸两缕长刺）
-    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.92, 13, hairC, hairLite);
-    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.08, 13, hairC, hairLite);
+    // 侧发（框脸两缕短刺）
+    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.92, 8.5, hairC, hairLite, hairShade);
+    hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.08, 8.5, hairC, hairLite, hairShade);
   } else if (kind === 'boy_hood') {
     // 兜帽沿 + 深色刘海
     ctx.strokeStyle = outfit;
@@ -921,7 +942,7 @@ function drawChibi(ctx, skin, o) {
 }
 
 // 动漫发刺：从头皮沿角度 a 长出的弯曲尖刺（一缕头发）
-function hairSpike(ctx, cx, cy, r, a, len, color, lite) {
+function hairSpike(ctx, cx, cy, r, a, len, color, lite, shade) {
   const tx = cx + Math.cos(a) * (r + len);
   const ty = cy + Math.sin(a) * (r + len);
   const b1x = cx + Math.cos(a - 0.3) * (r - 2);
@@ -939,6 +960,13 @@ function hairSpike(ctx, cx, cy, r, a, len, color, lite) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
+  // 发刺深色勾边（精致的赛璐璐轮廓）
+  if (shade) {
+    ctx.strokeStyle = shade;
+    ctx.lineWidth = 1.3;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
   // 受光边：沿刺的上缘一条细亮线（发丝光泽）
   if (lite) {
     ctx.strokeStyle = lite;
