@@ -1122,13 +1122,16 @@ const PUPPET = {
   lift: 14,
   hipBob: 2,
   torsoLean: 0.035,
-  outline: '#241A12',
-  skin: '#FFDCC0',
+  outline: '#1A1210',
+  skin: '#FFDFC4',
+  skinShade: '#DFA070',
   skinDark: '#D9A883',
-  shorts: '#C8231C',
-  sock: '#F2F4F6',
-  shoe: '#EDF0F2',
-  shoeAccent: '#D8302A',
+  shorts: '#E8281E',
+  shortsShade: '#9E1210',
+  sock: '#F4F6F8',
+  shoe: '#F5F6F8',
+  shoeShade: 'rgba(150,155,168,0.5)',
+  shoeAccent: '#E0201C',
 };
 
 function puppetLimb(g, x0, y0, x1, y1, w, color, outline) {
@@ -1136,7 +1139,7 @@ function puppetLimb(g, x0, y0, x1, y1, w, color, outline) {
   g.lineJoin = 'round';
   if (outline) {
     g.strokeStyle = outline;
-    g.lineWidth = w + 3;
+    g.lineWidth = w + 2.5;
     g.beginPath();
     g.moveTo(x0, y0);
     g.lineTo(x1, y1);
@@ -1148,6 +1151,19 @@ function puppetLimb(g, x0, y0, x1, y1, w, color, outline) {
   g.moveTo(x0, y0);
   g.lineTo(x1, y1);
   g.stroke();
+}
+
+// 赛璐璐双阶上色胶囊：亮色主体 + 背光面窄条阴影，贴近原画的厚描边平涂风
+function puppetCapsule(g, x0, y0, x1, y1, w, base, shade, outline) {
+  puppetLimb(g, x0, y0, x1, y1, w, base, outline);
+  if (shade) {
+    g.strokeStyle = shade;
+    g.lineWidth = w * 0.42;
+    g.beginPath();
+    g.moveTo(x0 - 1.8, y0 + 0.8);
+    g.lineTo(x1 - 1.8, y1 + 0.8);
+    g.stroke();
+  }
 }
 
 function smooth01(t) {
@@ -1205,29 +1221,45 @@ function drawPuppet(ctx, skin, x, y, run) {
     ctx.save();
     ctx.translate(ax, ay);
     ctx.rotate(toe);
+    // 袜箍（带灰影）
     ctx.fillStyle = P.sock;
     ctx.beginPath();
     ctx.arc(0, -3, far ? 3.4 : 3.9, 0, Math.PI * 2);
     ctx.fill();
-    // 鞋底贴踝下约 2px：再低会陷入地面基线
-    roundFill(ctx, -4, -3.4, 15, 5.8, 2.7, far ? '#D8DCE0' : P.shoe, 'rgba(40,26,18,0.55)');
-    ctx.fillStyle = far ? '#8f1f1c' : P.shoeAccent;
-    roundFill(ctx, -4, -0.2, 15, 2.4, 1.2, far ? '#8f1f1c' : P.shoeAccent, null);
+    ctx.fillStyle = 'rgba(160,168,180,0.45)';
+    ctx.beginPath();
+    ctx.arc(-1.2, -2.4, far ? 1.8 : 2.1, 0, Math.PI * 2);
+    ctx.fill();
+    // 鞋体：白底 + 灰影 + 红条 + 深色鞋底 + 前端高光（对齐原画白鞋红饰）
+    roundFill(ctx, -5, -4.6, 16.5, 6.4, 3, far ? '#DDE2E6' : P.shoe, 'rgba(26,18,16,0.85)');
+    roundFill(ctx, -1, -2, 12, 3.2, 1.6, P.shoeShade, null);
+    roundFill(ctx, -5, -1.4, 16.5, 1.8, 0.9, far ? '#8f1f1c' : P.shoeAccent, null);
+    ctx.fillStyle = far ? '#3a3a40' : '#241A12';
+    roundFill(ctx, -5, 0.8, 16.5, 1.6, 0.8, ctx.fillStyle, null);
+    roundFill(ctx, -3.8, -4.2, 6.5, 1.5, 0.75, 'rgba(255,255,255,0.85)', null);
     ctx.restore();
   }
 
   function leg(phase, hipX, far) {
     const skinC = far ? P.skinDark : P.skin;
     const shortsC = far ? '#8f1f1c' : P.shorts;
+    const shortsSd = far ? '#5f100e' : P.shortsShade;
     const [fx, fy] = puppetFoot(phase);
     // 膝盖必须朝前弯（dir=-1）：符号反了会变成朝后弯的"鸟腿"，直接不像人
     const [kx, ky, ax, ay] = puppetKnee(hipX, hipY, fx, fy, P.thigh, P.shin, -1);
-    puppetLimb(ctx, hipX, hipY, kx, ky, far ? 9.5 : 10.5, skinC, far ? null : P.outline);
-    // 大腿上半段盖短裤色裤腿：肤色整段外露会像光腿
-    const sx = hipX + (kx - hipX) * 0.46;
-    const sy = hipY + (ky - hipY) * 0.46;
-    puppetLimb(ctx, hipX, hipY, sx, sy, far ? 12 : 13.5, shortsC, far ? null : P.outline);
-    puppetLimb(ctx, kx, ky, ax, ay, far ? 7.5 : 8.5, skinC, far ? null : P.outline);
+    // 大腿：整段肤色打底，短裤只包住上段（中断会导致伸腿帧出现断缝）
+    puppetCapsule(ctx, hipX, hipY, kx, ky, far ? 9 : 10, skinC, far ? null : P.skinShade, far ? null : P.outline);
+    const sx = hipX + (kx - hipX) * 0.38;
+    const sy = hipY + (ky - hipY) * 0.38;
+    puppetCapsule(ctx, hipX, hipY, sx, sy, far ? 11.5 : 13, shortsC, far ? null : shortsSd, far ? null : P.outline);
+    // 小腿：肤色（双阶）+ 膝盖关节圆
+    puppetCapsule(ctx, kx, ky, ax, ay, far ? 7.5 : 8.5, skinC, far ? null : P.skinShade, far ? null : P.outline);
+    if (!far) {
+      ctx.fillStyle = P.skin;
+      ctx.beginPath();
+      ctx.arc(kx, ky, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
     drawShoe(ax, ay, phase, far);
   }
 
@@ -1235,7 +1267,9 @@ function drawPuppet(ctx, skin, x, y, run) {
   leg(p + Math.PI, -3 + hipShift, true);
 
   // 髋部和躯干保持同一重心，避免腿从身体侧面脱开。
-  roundFill(ctx, x - 10 + hipShift, y + hipY - 4, 20, 14, 5.5, P.shorts, 'rgba(120,20,16,0.5)');
+  // 髋部短裤块：衔接两条腿的裤腿与躯干下摆
+  roundFill(ctx, x - 11 + hipShift, y + hipY - 4, 22, 14, 5.5, '#D8281E', 'rgba(26,18,16,0.85)');
+  roundFill(ctx, x - 8 + hipShift, y + hipY + 3, 14, 5.5, 2.7, 'rgba(120,10,10,0.55)', null);
   const s = 96 / 256;
   const WX = 200, WH = 126;
   ctx.save();
