@@ -39,7 +39,7 @@ function strokeRound(ctx, color, w) {
   ctx.lineJoin = 'round';
 }
 
-// ---- 小马驹：四腿小跑 + 鬃毛 + 马尾（放大版，撑得起骑手） ----
+// ---- 小马驹：对角小跑 + 身体起伏 + 点头（放大版，撑得起骑手） ----
 function drawPony(ctx, run, grounded) {
   const body = '#C68B59';
   const dark = '#8A5A32';
@@ -48,10 +48,15 @@ function drawPony(ctx, run, grounded) {
   const maneLite = '#FBF0DA';
   const blanket = '#D8302A';
 
-  // 四条腿（小跑摆动）+ 深色马蹄
+  // 身体随步态起伏（与骑手 rideBob 同相），腿髋随身体、脚保持贴地
+  const bob = grounded ? -Math.abs(Math.sin(run * 0.9)) * 1.8 : -1.2;
+  ctx.save();
+  ctx.translate(0, bob);
+
+  // 四条腿：标准对角小跑（左前+右后同相，右前+左后同相）+ 深色马蹄
   strokeRound(ctx, dark, 6);
   const xs = [-25, -16, 13, 22];
-  const phases = [0, 0.5, Math.PI, Math.PI + 0.5];
+  const phases = [0, Math.PI, Math.PI, 0];
   const feet = [];
   for (let i = 0; i < 4; i++) {
     ctx.beginPath();
@@ -62,19 +67,23 @@ function drawPony(ctx, run, grounded) {
       const s2 = Math.sin(run + phases[i]);
       fx = xs[i] + s2 * 9;
       fy = -1 - Math.max(0, Math.cos(run + phases[i])) * 4;
-      ctx.lineTo(fx, fy);
+      ctx.lineTo(fx, fy - bob);
     } else {
-      ctx.lineTo(fx, fy);
+      ctx.lineTo(fx, fy - bob);
     }
     ctx.stroke();
     feet.push([fx, fy]);
   }
   ctx.fillStyle = hoof;
   for (const f of feet) {
-    roundFill(ctx, f[0] - 3.4, f[1] - 3.4, 6.8, 4.2, 2, hoof, null);
+    roundFill(ctx, f[0] - 3.4, f[1] - 3.4 - bob, 6.8, 4.2, 2, hoof, null);
   }
 
-  // 马尾（三缕 + 描边）
+  // 马尾（三缕 + 描边，随步伐轻摆）
+  ctx.save();
+  ctx.translate(-32, -30);
+  ctx.rotate(Math.sin(run * 1.1) * 0.14);
+  ctx.translate(32, 30);
   strokeRound(ctx, dark, 6.5);
   for (const dy of [-8, -3, 2]) {
     ctx.beginPath();
@@ -89,6 +98,7 @@ function drawPony(ctx, run, grounded) {
     ctx.lineTo(-39.4, -30 + dy);
     ctx.stroke();
   }
+  ctx.restore();
 
   // 身体 + 肚皮阴影 + 背部高光 + 鞍毯
   roundFill(ctx, -31, -37, 62, 27, 13, body, dark);
@@ -113,7 +123,9 @@ function drawPony(ctx, run, grounded) {
   ctx.lineTo(11, -40.4);
   ctx.stroke();
 
-  // 脖颈 + 头
+  // 脖颈 + 头（随步伐轻微点头）
+  ctx.save();
+  ctx.translate(0, Math.sin(run * 0.9 + 0.6) * 1.1);
   ctx.beginPath();
   ctx.moveTo(13, -32);
   ctx.lineTo(25, -48);
@@ -188,6 +200,8 @@ function drawPony(ctx, run, grounded) {
     ctx.fillStyle = maneLite;
     ctx.fill();
   }
+  ctx.restore(); // 点头组
+  ctx.restore(); // 身体起伏组
 }
 
 // ---- 小恐龙：背刺 + 呆萌大头（放大版） ----
@@ -196,6 +210,13 @@ function drawDino(ctx, run, grounded) {
   const dark = '#558B2F';
   const belly = '#C5E1A5';
   const spike = '#33691E';
+
+  // 身体组：小恐龙摇摆步（身体绕髋微转 + 起伏），腿保持贴地
+  ctx.save();
+  ctx.translate(0, -20);
+  ctx.rotate(grounded ? Math.sin(run * 0.9) * 0.035 : 0);
+  ctx.translate(0, 20);
+  ctx.translate(0, grounded ? -Math.abs(Math.sin(run * 0.9)) * 1.4 : -0.8);
 
   // 尾巴 + 尾刺
   ctx.beginPath();
@@ -298,6 +319,7 @@ function drawDino(ctx, run, grounded) {
   ctx.moveTo(29, -31);
   ctx.lineTo(34, -31.5);
   ctx.stroke();
+  ctx.restore(); // 摇摆组
 }
 
 // ---- 自行车：大车轮 + 车架（与骑手脚部踏板同相位） ----
@@ -331,7 +353,7 @@ function drawBicycle(ctx, run) {
     ctx.beginPath();
     ctx.arc(wx, -21, 17.5, 0, Math.PI * 2);
     ctx.stroke();
-    const rot = run * 1.5;
+    const rot = run * 0.85; // 与地面滚动速度匹配（周长 132px），不空转
     ctx.strokeStyle = metalDark;
     ctx.lineWidth = 1.8;
     for (let a = 0; a < 3; a++) {
@@ -415,7 +437,8 @@ function drawMoto(ctx, run) {
   const metal = '#B0BEC5';
   const metalDark = '#78909C';
 
-  // 车轮（轮胎 + 胎纹 + 轮毂）
+  // 车轮（轮胎 + 滚动胎纹 + 轮毂）
+  const wrot = run * 1.37; // 与地面滚动速度匹配（周长 82px）
   for (const wx of [-19, 19]) {
     ctx.beginPath();
     ctx.arc(wx, -13, 13, 0, Math.PI * 2);
@@ -424,7 +447,7 @@ function drawMoto(ctx, run) {
     ctx.strokeStyle = 'rgba(255,255,255,0.16)';
     ctx.lineWidth = 1.3;
     for (let a = 0; a < 8; a++) {
-      const ang = a * Math.PI / 4;
+      const ang = wrot + a * Math.PI / 4;
       ctx.beginPath();
       ctx.moveTo(wx + Math.cos(ang) * 10.5, -13 + Math.sin(ang) * 10.5);
       ctx.lineTo(wx + Math.cos(ang) * 12.2, -13 + Math.sin(ang) * 12.2);
