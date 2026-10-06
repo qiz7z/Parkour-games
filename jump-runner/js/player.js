@@ -553,6 +553,11 @@ function drawChibi(ctx, skin, o) {
     ctx.fill();
   } else if (kind === 'boy_spiky') {
     // 脑后发团：紧凑圆弧 + 勾边（杂乱背刺去掉，王冠形由前层发刺组成）
+    const hairSway = Math.sin(run * 1.1) * 0.04; // 发丝随跑动轻摆
+    ctx.save();
+    ctx.translate(HX, HY);
+    ctx.rotate(hairSway);
+    ctx.translate(-HX, -HY);
     ctx.beginPath();
     ctx.arc(HX, HY, FACE_R + 2, 0, PI2);
     ctx.fillStyle = hairC;
@@ -560,6 +565,7 @@ function drawChibi(ctx, skin, o) {
     ctx.strokeStyle = hairShade;
     ctx.lineWidth = 1.6;
     ctx.stroke();
+    ctx.restore();
   }
 
   // ---- 身体（上衣+短裤 / 连衣裙）+ 阴影 + 服装细节 ----
@@ -617,12 +623,18 @@ function drawChibi(ctx, skin, o) {
     ctx.moveTo(11.6, -26);
     ctx.quadraticCurveTo(13.2, -20, 11.4, -13);
     ctx.stroke();
-    // 右侧衣身阴影
+    // 硬边赛璐璐阴影：右下斜切面（卡通渲染的关键是阴影有干净形状边缘）
     ctx.save();
     roundFill(ctx, -13, -29, 26, 18, 8, null, null);
     ctx.clip();
-    ctx.fillStyle = 'rgba(30,34,60,0.14)';
-    ctx.fillRect(4, -31, 12, 24);
+    ctx.fillStyle = 'rgba(30,34,60,0.16)';
+    ctx.beginPath();
+    ctx.moveTo(3, -29);
+    ctx.lineTo(13, -29);
+    ctx.lineTo(13, -11);
+    ctx.lineTo(-5, -11);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
     // 颈部落影（头部在躯干上的环境光遮蔽）
     ctx.fillStyle = 'rgba(120,75,55,0.16)';
@@ -657,6 +669,18 @@ function drawChibi(ctx, skin, o) {
       roundFill(ctx, -13, -14.5, 26, 3.4, 1.7, cloth, null); // 裙摆白边
     }
     roundFill(ctx, -10, -13.5, 20, 7, 3.5, darkOf(skin), LINE); // 短裤勾边
+    // 短裤左上受光（硬边）
+    ctx.save();
+    roundFill(ctx, -10, -13.5, 20, 7, 3.5, null, null);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,246,230,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(-10, -13.5);
+    ctx.lineTo(-2, -13.5);
+    ctx.lineTo(-10, -6.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
     // 裤脚高光线
     ctx.strokeStyle = 'rgba(255,246,230,0.28)';
     ctx.lineWidth = 1.2;
@@ -709,6 +733,18 @@ function drawChibi(ctx, skin, o) {
   ctx.arc(h2.x, h2.y, 3.2, 0, PI2);
   ctx.stroke();
 
+  // 缰绳：近手 → 坐骑头部（小马/恐龙），轻度下垂弧线
+  if (mountId === 'pony' || mountId === 'dino') {
+    const end = mountId === 'pony' ? { x: 36, y: -10 } : { x: 24, y: -2.5 };
+    ctx.strokeStyle = 'rgba(74,52,46,0.85)';
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(h2.x, h2.y);
+    ctx.quadraticCurveTo((h2.x + end.x) / 2, Math.max(h2.y, end.y) + 4.5, end.x, end.y);
+    ctx.stroke();
+  }
+
   // ---- 头 + 脸部体块阴影 ----
   ctx.beginPath();
   if (kind === 'boy_hood') {
@@ -743,7 +779,12 @@ function drawChibi(ctx, skin, o) {
 
   // ---- 前层发型 / 帽子 / 兜帽 ----
   if (kind === 'boy_spiky') {
-    // 王冠式发刺：5 缕整齐向上（中间略高），收敛不炸开
+    // 王冠式发刺：5 缕整齐向上（中间略高），随跑动轻摆
+    const hairSway = Math.sin(run * 1.1) * 0.04;
+    ctx.save();
+    ctx.translate(HX, HY);
+    ctx.rotate(hairSway);
+    ctx.translate(-HX, -HY);
     const fan = [-2.45, -2.05, -1.57, -1.05, -0.68];
     fan.forEach((sa, i) => {
       hairSpike(ctx, HX, HY, FACE_R + 0.5, sa, 7.5 + (i === 2 ? 2.5 : 0), hairC, hairLite, hairShade);
@@ -753,6 +794,7 @@ function drawChibi(ctx, skin, o) {
     // 侧发（框脸两缕短刺）
     hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.92, 8.5, hairC, hairLite, hairShade);
     hairSpike(ctx, HX, HY + 1, FACE_R - 1, Math.PI * 0.08, 8.5, hairC, hairLite, hairShade);
+    ctx.restore();
   } else if (kind === 'boy_hood') {
     // 兜帽沿 + 深色刘海
     ctx.strokeStyle = outfit;
@@ -871,10 +913,14 @@ function drawChibi(ctx, skin, o) {
       ctx.stroke();
       continue;
     }
-    // 眼白（竖椭圆）
+    // 眼白（竖椭圆）+ 上睑投影
     ctx.beginPath();
     ctx.ellipse(ex, ey, 3.0, 4.2, 0, 0, PI2);
     ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(120,90,70,0.16)';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey - 2.8, 2.8, 1.3, 0, 0, PI2);
     ctx.fill();
     // 虹膜：径向渐变（心深缘亮）+ 底缘反光弧（动漫眼核心特征）
     const ig = ctx.createRadialGradient(ex + 0.5, ey + 1.8, 0.4, ex + 0.5, ey + 0.6, 3.1);
@@ -984,6 +1030,17 @@ function hairSpike(ctx, cx, cy, r, a, len, color, lite, shade) {
     ctx.lineWidth = 1.3;
     ctx.lineJoin = 'round';
     ctx.stroke();
+    // 发根暗部楔形（两阶上色，增加体积感）
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    ctx.moveTo(b1x, b1y);
+    ctx.lineTo(b2x, b2y);
+    ctx.lineTo(cx + Math.cos(a) * (r + len * 0.3), cy + Math.sin(a) * (r + len * 0.3));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
   // 受光边：沿刺的上缘一条细亮线（发丝光泽）
   if (lite) {

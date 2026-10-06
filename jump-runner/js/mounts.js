@@ -107,19 +107,15 @@ function drawPony(ctx, run, grounded) {
   }
   ctx.restore();
 
-  // 身体 + 肚皮阴影 + 背部高光 + 鞍毯
+  // 身体 + 硬边赛璐璐明暗 + 鞍毯
   roundFill(ctx, -31, -37, 62, 27, 13, body, dark);
   ctx.save();
   roundFill(ctx, -31, -37, 62, 27, 13, null, null);
   ctx.clip();
-  ctx.fillStyle = 'rgba(90,52,22,0.25)'; // 腹侧阴影
-  ctx.beginPath();
-  ctx.ellipse(-2, -14, 34, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,240,214,0.4)'; // 背部受光
-  ctx.beginPath();
-  ctx.ellipse(-2, -36, 30, 4.5, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillStyle = 'rgba(90,52,22,0.24)'; // 腹侧硬边阴影
+  ctx.fillRect(-31, -23, 62, 13);
+  ctx.fillStyle = 'rgba(255,240,214,0.42)'; // 背部受光带
+  ctx.fillRect(-31, -37, 62, 5);
   ctx.restore();
   // 红色鞍毯 + 描边 + 饰线 + 缝线
   roundFill(ctx, -15, -42, 29, 8, 3.8, blanket, dark);
@@ -434,6 +430,8 @@ function drawBicycle(ctx, run) {
   ctx.moveTo(-17, -46.8);
   ctx.lineTo(-7, -46.8);
   ctx.stroke();
+  // 后挡泥板红色反光片
+  roundFill(ctx, -28.2, -31.5, 4.6, 3.4, 1.6, '#E53935', 'rgba(120,14,14,0.8)');
   // 车把（金属横把 + 两端黑色握套 + 车铃）
   roundFill(ctx, 22, -46, 15, 5, 2.5, metal, tire);
   roundFill(ctx, 33.4, -45.6, 4.4, 4.2, 2, tire, null);
