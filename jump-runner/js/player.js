@@ -616,6 +616,14 @@ function drawChibi(ctx, skin, o) {
     roundFill(ctx, -13, -29, 26, 18, 8, torsoGradCache[torsoKey], LINE); // 衣身勾边
     // 领口（颈部小圆领）
     roundFill(ctx, -5.5, -29.8, 11, 3.2, 1.6, cloth, 'rgba(74,52,46,0.6)');
+    // 胸前小圆徽（呼应角色立绘设计）
+    ctx.fillStyle = 'rgba(255,252,244,0.92)';
+    ctx.beginPath();
+    ctx.arc(5, -21.5, 2.6, 0, PI2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(120,20,16,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
     // 衣身右侧轮廓光
     ctx.strokeStyle = 'rgba(255,246,230,0.4)';
     ctx.lineWidth = 1.4;
@@ -700,6 +708,14 @@ function drawChibi(ctx, skin, o) {
   } else if (grounded) {
     limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.26, -1, 0.35, 6, 4.6, shadeOf(skin.fill));
     limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.26, -1, 0.35, 6, 4.6, outfit);
+    // 肩部袖根（近臂）：袖子从身体上长出来的感觉
+    ctx.fillStyle = outfit;
+    ctx.beginPath();
+    ctx.arc(9.5, -23.5, 4.4, 0, PI2);
+    ctx.fill();
+    ctx.strokeStyle = LINE;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
   } else {
     limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.22, -1, 0.3, 6, 4.6, shadeOf(skin.fill));
     limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.22, -1, 0.3, 6, 4.6, outfit);
@@ -1024,7 +1040,7 @@ function hairSpike(ctx, cx, cy, r, a, len, color, lite, shade) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
-  // 发刺深色勾边（精致的赛璐璐轮廓）
+  // 发瓣深色勾边（精致的赛璐璐轮廓）
   if (shade) {
     ctx.strokeStyle = shade;
     ctx.lineWidth = 1.3;
