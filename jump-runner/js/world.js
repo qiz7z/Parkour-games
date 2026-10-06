@@ -1,6 +1,7 @@
 // 世界：地面分段（含深坑）、障碍、金币的程序化生成 + 碰撞检测
 // 坐标约定：世界坐标向右增长，scroll 为已滚动距离，屏幕 x = 世界 x - scroll
 const util = require('./util');
+const F = require('./font');
 
 class World {
   constructor(W, H, groundY) {
@@ -348,10 +349,72 @@ class World {
         const row = Math.abs(px2 / 46) % 3;
         ctx.fillRect(px, gy + 34 + row * 26, 7, 4);
       }
+      // 路边小花与石块（确定性稀疏分布，给土层添生气）
+      let dwx = Math.ceil(Math.max(seg.x, scroll - 30) / 74) * 74;
+      for (; dwx < seg.x + seg.w && dwx - scroll < this.W + 30; dwx += 74) {
+        const hsh = util.hash(dwx);
+        if (hsh < 0.45) continue;
+        const px = dwx - scroll + hsh * 26;
+        const py = gy + 16 + util.hash(dwx + 7) * (this.H - gy - 36);
+        if (hsh > 0.74) {
+          // 小花：四瓣 + 花芯
+          const petal = hsh > 0.88 ? '#FF8FAB' : (hsh > 0.81 ? '#FFE082' : '#FFFFFF');
+          ctx.fillStyle = petal;
+          for (let k = 0; k < 4; k++) {
+            const a = k * Math.PI / 2 + 0.6;
+            ctx.beginPath();
+            ctx.arc(px + Math.cos(a) * 2.6, py + Math.sin(a) * 2.6, 1.7, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = '#FFB300';
+          ctx.beginPath();
+          ctx.arc(px, py, 1.3, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // 小石块 + 受光面
+          ctx.fillStyle = 'rgba(120,110,100,0.5)';
+          ctx.beginPath();
+          ctx.ellipse(px, py, 4.5 + hsh * 3, 3 + hsh * 1.6, hsh, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          ctx.beginPath();
+          ctx.ellipse(px - 1, py - 1.2, 2, 1, hsh, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
       // 坑边缘加深，提示危险
       ctx.fillStyle = 'rgba(0,0,0,0.18)';
       if (seg.x > 0) ctx.fillRect(drawX, gy, 3, this.H - gy);
       ctx.fillRect(drawX + w - 3, gy, 3, this.H - gy);
+    }
+
+    // 里程碑旗杆（每 100 米一面，实体进度标识）
+    const METER = 55; // 与 SCORE_DIV 一致：55px = 1m
+    let nFlag = Math.max(1, Math.ceil((scroll - 40) / (100 * METER)));
+    for (; nFlag * 100 * METER - scroll < this.W + 40; nFlag++) {
+      const fx = nFlag * 100 * METER - scroll;
+      const fy = this.groundY;
+      ctx.fillStyle = '#8A93A5';
+      ctx.fillRect(fx - 1.5, fy - 58, 3, 58);
+      ctx.fillStyle = '#6B7280';
+      ctx.fillRect(fx - 3.2, fy - 60, 6.4, 4);
+      const wave = Math.sin(time * 6 + nFlag * 1.7) * 2.2;
+      ctx.fillStyle = '#FF7043';
+      ctx.beginPath();
+      ctx.moveTo(fx + 1.5, fy - 56);
+      ctx.quadraticCurveTo(fx + 14, fy - 54 + wave, fx + 27, fy - 52 + wave * 0.6);
+      ctx.lineTo(fx + 27, fy - 42 + wave * 0.6);
+      ctx.quadraticCurveTo(fx + 14, fy - 44 + wave, fx + 1.5, fy - 46);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#D84315';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = F.b(10);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(nFlag * 100 + 'm', fx + 14, fy - 49 + wave * 0.5);
     }
 
     // 障碍接触阴影（贴地柔影，先画阴影再画障碍）

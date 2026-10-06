@@ -169,7 +169,7 @@ class Background {
       ctx.globalAlpha = 1;
     }
 
-    // 云（白色主体 + 底部淡影）
+    // 云（白色主体 + 底部淡影 + 顶部小 puff）
     for (const c of this.clouds) {
       ctx.globalAlpha = 0.85 * theme.cloud;
       ctx.fillStyle = 'rgba(110,150,190,0.35)';
@@ -183,9 +183,27 @@ class Background {
       ctx.arc(c.x, c.y, 14 * c.s, 0, Math.PI * 2);
       ctx.arc(c.x + 16 * c.s, c.y + 4 * c.s, 11 * c.s, 0, Math.PI * 2);
       ctx.arc(c.x - 16 * c.s, c.y + 5 * c.s, 10 * c.s, 0, Math.PI * 2);
+      ctx.arc(c.x + 5 * c.s, c.y - 6 * c.s, 8 * c.s, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+
+    // 远处雁群（约 80 秒飘过一群，天空的氛围感）
+    const flockX = this.W + 160 - ((time * 14) % (this.W + 340));
+    const flockY = this.H * 0.15;
+    ctx.strokeStyle = util.rgbStr(util.lerpColor([72, 92, 112], theme.skyTop, 0.4), 0.65);
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const bxp = flockX + (i % 2) * 15 - i * 11;
+      const byp = flockY + i * 7.5;
+      const flap = Math.sin(time * 7 + i * 1.3) * 2.6;
+      ctx.beginPath();
+      ctx.moveTo(bxp - 5, byp);
+      ctx.quadraticCurveTo(bxp - 2.2, byp - 2.6 - flap, bxp, byp);
+      ctx.quadraticCurveTo(bxp + 2.2, byp - 2.6 - flap, bxp + 5, byp);
+      ctx.stroke();
+    }
 
     // 远山（三角 + 雪顶）—— 颜色向天空退色，做出空气透视
     this.drawRange(
