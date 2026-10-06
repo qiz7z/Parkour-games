@@ -77,6 +77,13 @@ function drawPony(ctx, run, grounded) {
   ctx.fillStyle = hoof;
   for (const f of feet) {
     roundFill(ctx, f[0] - 3.4, f[1] - 3.4 - bob, 6.8, 4.2, 2, hoof, null);
+    // 蹄面高光
+    ctx.strokeStyle = 'rgba(255,240,214,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(f[0] - 2.2, f[1] - 2.6 - bob);
+    ctx.lineTo(f[0] - 0.4, f[1] - 2.9 - bob);
+    ctx.stroke();
   }
 
   // 马尾（三缕 + 描边，随步伐轻摆）
@@ -114,7 +121,7 @@ function drawPony(ctx, run, grounded) {
   ctx.ellipse(-2, -36, 30, 4.5, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-  // 红色鞍毯 + 描边 + 饰线
+  // 红色鞍毯 + 描边 + 饰线 + 缝线
   roundFill(ctx, -15, -42, 29, 8, 3.8, blanket, dark);
   ctx.strokeStyle = 'rgba(255,235,200,0.75)';
   ctx.lineWidth = 1.3;
@@ -122,6 +129,14 @@ function drawPony(ctx, run, grounded) {
   ctx.moveTo(-12, -40.4);
   ctx.lineTo(11, -40.4);
   ctx.stroke();
+  ctx.strokeStyle = 'rgba(120,20,16,0.65)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 2.4]);
+  ctx.beginPath();
+  ctx.moveTo(-13.5, -37.4);
+  ctx.lineTo(12.5, -37.4);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
   // 脖颈 + 头（随步伐轻微点头）
   ctx.save();
@@ -276,7 +291,7 @@ function drawDino(ctx, run, grounded) {
   ctx.fill();
   ctx.restore();
 
-  // 背刺（中间留出鞍座空位）+ 描边
+  // 背刺（中间留出鞍座空位）+ 描边 + 受光亮边
   ctx.fillStyle = spike;
   for (const x of [-26, 15]) {
     ctx.beginPath();
@@ -288,6 +303,12 @@ function drawDino(ctx, run, grounded) {
     ctx.strokeStyle = spike;
     ctx.lineWidth = 1.4;
     ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(214,240,168,0.55)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(x + 1.6, -34.6);
+    ctx.lineTo(x + 3.6, -41);
     ctx.stroke();
   }
 
@@ -392,6 +413,18 @@ function drawBicycle(ctx, run) {
   tube(3, -21, 25, -21);    // 底位线
   tube(25, -21, 31, -49);   // 前叉（加高前伸）
   tube(-12, -42, 20, -43);  // 上管
+  // 焊接点（关节处的金属圆珠）
+  ctx.fillStyle = frameDark;
+  for (const j of [[-12, -44], [3, -21], [25, -21]]) {
+    ctx.beginPath();
+    ctx.arc(j[0], j[1], 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.arc(j[0] - 0.7, j[1] - 0.7, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = frameDark;
+  }
 
   // 车座（骑手脚底位置）+ 描边 + 高光
   roundFill(ctx, -19, -48, 15, 5.5, 2.6, tire, metalDark);
@@ -496,7 +529,7 @@ function drawMoto(ctx, run) {
   ctx.stroke();
   // 车座 + 描边
   roundFill(ctx, -21, -34, 19, 6, 2.8, seat, metalDark);
-  // 前立柱 + 车把（含握套）
+  // 前立柱 + 车把（含握套）+ 后视镜
   roundFill(ctx, 12, -41, 8, 15, 3.5, body, dark);
   ctx.strokeStyle = seat;
   ctx.lineWidth = 3.4;
@@ -505,6 +538,14 @@ function drawMoto(ctx, run) {
   ctx.lineTo(23, -42);
   ctx.stroke();
   roundFill(ctx, 22.6, -43.8, 4.6, 4.4, 2.2, '#263238', null);
+  // 后视镜（镜杆 + 镜面）
+  ctx.strokeStyle = metalDark;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(17, -42);
+  ctx.lineTo(14.5, -47.5);
+  ctx.stroke();
+  roundFill(ctx, 12.2, -50.6, 5.4, 4, 2, '#CDE8F5', metalDark);
   // 车灯（灯罩 + 光环）
   ctx.beginPath();
   ctx.arc(25, -22, 3.6, 0, Math.PI * 2);

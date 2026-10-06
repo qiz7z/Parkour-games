@@ -432,8 +432,9 @@ function drawChibi(ctx, skin, o) {
 
   // ---- 腿 + 鞋（骑乘时分层：远腿在坐骑后、近腿在坐骑前，腿跨在坐骑上） ----
   const drawShoe = (fx, fy) => {
-    // 白袜
+    // 白袜 + 袜口主题色条纹
     roundFill(ctx, fx - 2.2, fy - 8.2, 8.4, 3.6, 1.8, '#F4F6F8', null);
+    roundFill(ctx, fx - 2.2, fy - 6.7, 8.4, 1.3, 0.65, outfit, null);
     // 白球鞋 + 品牌色带 + 深色鞋底 + 前端高光
     roundFill(ctx, fx - 3, fy - 5.6, 10.8, 5.6, 2.6, '#F5F6F8', LINE);
     roundFill(ctx, fx - 3, fy - 3.7, 10.8, 2.1, 1, outfit, null);
@@ -484,6 +485,8 @@ function drawChibi(ctx, skin, o) {
     // 滑铲：上身绕髋前扑约 66°——头朝前方、身体平行贴地（天天酷跑式）
     ctx.translate(-12, 1);
     ctx.rotate(1.15);
+  } else if (grounded && !riding) {
+    ctx.rotate(0.055); // 跑动前倾：上身略微压向前方，更有冲刺感
   }
   if (riding) ctx.scale(1.14, 1.14); // 骑乘时上半身放大：大坐骑上人物比例更协调
 
@@ -677,7 +680,19 @@ function drawChibi(ctx, skin, o) {
     limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.22, -1, 0.3, 6, 4.6, shadeOf(skin.fill));
     limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.22, -1, 0.3, 6, 4.6, outfit);
   }
-  // 手（肤色 + 轮廓描边）
+  // 袖口（袖子末端的衣袖卷边）+ 手（肤色 + 轮廓描边）
+  const cuff = (sx, sy, hx2, hy2) => {
+    const cx2 = sx + (hx2 - sx) * 0.84;
+    const cy2 = sy + (hy2 - sy) * 0.84;
+    ctx.fillStyle = darkOf(skin);
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, 3.9, 0, PI2);
+    ctx.fill();
+  };
+  if (sliding || grounded) {
+    cuff(-9.5, -23.5, h1.x, h1.y);
+    cuff(9.5, -23.5, h2.x, h2.y);
+  }
   ctx.fillStyle = SKIN_TONE;
   ctx.beginPath();
   ctx.arc(h1.x, h1.y, 3.2, 0, PI2);
