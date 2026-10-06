@@ -23,23 +23,26 @@ class Particles {
         color: opt.color,
         grav: opt.grav || 0,
         world: !!opt.world,
+        puffy: !!opt.puffy,
+        star: !!opt.star,
+        seed: Math.random() * 6.28,
       });
     }
   }
 
-  // 落地/起跳扬尘（跟随世界滚动）
+  // 落地/起跳扬尘（跟随世界滚动，蓬松烟团）
   dust(x, y, n) {
     this.emit(x, y, n || 6, {
       angle: -Math.PI / 2, spread: 1.1, speed: 130,
-      size: 5, life: 0.5, color: 'rgba(125,112,100,0.55)', grav: 320, world: true,
+      size: 7, life: 0.55, color: 'rgba(125,112,100,0.42)', grav: 260, world: true, puffy: true,
     });
   }
 
-  // 金币火花
+  // 金币火花（四角星闪烁）
   sparkle(x, y) {
     this.emit(x, y, 9, {
       angle: 0, spread: Math.PI * 2, speed: 180,
-      size: 4.5, life: 0.5, color: '#FFD54F', grav: 80, world: true,
+      size: 5, life: 0.5, color: '#FFD54F', grav: 80, world: true, star: true,
     });
   }
 
@@ -73,12 +76,41 @@ class Particles {
 
   draw(ctx) {
     for (const p of this.list) {
-      ctx.globalAlpha = 1 - p.age / p.life;
-      ctx.fillStyle = p.color;
-      const s = p.size * (1 - 0.5 * p.age / p.life);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(0.5, s / 2), 0, Math.PI * 2);
-      ctx.fill();
+      const k = p.age / p.life;
+      ctx.globalAlpha = 1 - k;
+      const s = p.size * (1 - 0.5 * k);
+      if (p.puffy) {
+        // 蓬松烟团：主团 + 侧团，随时间膨胀变淡
+        const r = Math.max(1, s / 2) * (1 + k * 0.9);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = (1 - k) * 0.6;
+        ctx.beginPath();
+        ctx.arc(p.x + Math.cos(p.seed) * r * 0.8, p.y + Math.sin(p.seed) * r * 0.5, r * 0.62, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.star) {
+        // 四角星（菱形闪光，随时间收缩）
+        const r = Math.max(1, s * (1 - k * 0.6));
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - r);
+        ctx.quadraticCurveTo(p.x, p.y, p.x + r, p.y);
+        ctx.quadraticCurveTo(p.x, p.y, p.x, p.y + r);
+        ctx.quadraticCurveTo(p.x, p.y, p.x - r, p.y);
+        ctx.quadraticCurveTo(p.x, p.y, p.x, p.y - r);
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(0.5, s / 2), 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

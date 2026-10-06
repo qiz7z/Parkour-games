@@ -400,6 +400,11 @@ class World {
       }
       ctx.save();
       ctx.translate(sx, sy);
+      // 币缘厚度（翻转时露出的侧面）
+      ctx.beginPath();
+      ctx.ellipse(1.6 * (1 - wob), 0, c.r * Math.max(0.18, wob), c.r, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#C98A1B';
+      ctx.fill();
       ctx.scale(Math.max(0.18, wob), 1);
       ctx.beginPath();
       ctx.arc(0, 0, c.r, 0, Math.PI * 2);
@@ -408,6 +413,20 @@ class World {
       ctx.lineWidth = 2;
       ctx.strokeStyle = '#C98A1B';
       ctx.stroke();
+      // 币面浮雕五角星
+      ctx.fillStyle = 'rgba(200,138,27,0.85)';
+      ctx.beginPath();
+      for (let k = 0; k < 5; k++) {
+        const a1 = -Math.PI / 2 + k * Math.PI * 2 / 5;
+        const a2 = a1 + Math.PI / 5;
+        const ro = c.r * 0.62;
+        const ri = c.r * 0.27;
+        if (k === 0) ctx.moveTo(Math.cos(a1) * ro, Math.sin(a1) * ro);
+        else ctx.lineTo(Math.cos(a1) * ro, Math.sin(a1) * ro);
+        ctx.lineTo(Math.cos(a2) * ri, Math.sin(a2) * ri);
+      }
+      ctx.closePath();
+      ctx.fill();
       ctx.beginPath();
       ctx.arc(0, 0, c.r * 0.55, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(255,255,255,0.32)';
