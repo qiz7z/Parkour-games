@@ -318,6 +318,11 @@ console.log('9) 存档：JSON 序列化与旧数据迁移');
   global.wx.setStorageSync('jumpy_save_v1', 'not-json{{{');
   const p2 = storageMod.load();
   check(typeof p2.best === 'number', '损坏存档安全回退');
+  // 备份档：主档损坏时恢复上一份完好进度
+  global.wx.setStorageSync('jumpy_save_bak', JSON.stringify({ best: 77, coins: 55 }));
+  const p2b = storageMod.load();
+  check(p2b.best === 77 && p2b.coins === 55, '主档损坏时从备份档恢复');
+  global.wx.setStorageSync('jumpy_save_bak', '');
   global.wx.setStorageSync('jumpy_best', 321);
   const p3 = storageMod.load();
   check(p3.best === 321, '旧版最高分迁移');
