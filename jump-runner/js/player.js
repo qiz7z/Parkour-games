@@ -42,6 +42,7 @@ class Player {
     this.sy = 1;
     this.dead = false;
     this.slide = 0;       // 剩余滑铲时间
+    this.lieT = 0;        // 下蹲过渡系数（0直立→1贴地，进出各~0.12s，防姿势瞬跳）
     this.slideQueued = false; // 空中下压：落地后接滑铲
     this.flipT = 0;       // 二段跳空翻剩余时间
     this.deadVy = 0;      // 死亡弹飞垂直速度
@@ -103,6 +104,10 @@ class Player {
     this.sy += (1 - this.sy) * Math.min(1, dt * 12);
     // 空翻计时
     if (this.flipT > 0) this.flipT -= dt;
+    // 下蹲过渡：贴地 0.12s 起身 0.16s（丝滑的关键）
+    const lieTarget = this.slide > 0 ? 1 : 0;
+    if (lieTarget > this.lieT) this.lieT = Math.min(1, this.lieT + dt / 0.12);
+    else if (lieTarget < this.lieT) this.lieT = Math.max(0, this.lieT - dt / 0.16);
   }
 
   // opts: { skin, shield, invincible, mount: 坐骑id|null }
@@ -150,9 +155,9 @@ class Player {
     if (mountId) {
       const thq = Math.floor(((this.run * 1.5) / PI2L) * 8) % 8;
       qRun = (thq / 8) * PI2L / 1.5;
-      poseKey = 'ride' + thq + (this.slide > 0 ? 's' : '');
+      poseKey = 'ride' + thq + ((this.slide > 0 || this.lieT > 0.04) ? 's' : '');
     } else if (this.slide > 0) {
-      poseKey = 'slide';
+      poseKey = 'slide'; // 过渡期由外层 lieT 旋转补偿（见下方绘制）
     } else if (!this.grounded) {
       const lvl = Math.round(util.clamp(this.vy / 700, -1, 1) * 2 + 2); // 0..4
       qVy = (lvl - 2) * 350;
@@ -187,7 +192,7 @@ class Player {
           ctx.save();
           ctx.translate(x, y + rideH + inset + rb);
           ctx.rotate(this.slide > 0 ? rt * 0.4 : rt);
-          if (this.slide > 0) ctx.scale(1.06, 0.62);
+          if (this.lieT > 0.001) ctx.scale(1 + 0.06 * this.lieT, 1 - 0.38 * this.lieT);
           drawActor(ctx, mi, 0, 0, H, {});
           // 程序化车轮（轮胎环 + 辐条 + 花鼓，按滚动速度旋转）
           const wm = RIDE_WHEELS[mountId];
@@ -226,22 +231,39 @@ class Player {
           ctx.restore();
         } else if (!Sprites.ready()) {
           // 骑乘分层合成：远腿画布 → 坐骑（程序化，车轮转动）→ 近腿+身体画布
+          // 铲行前倾过渡：'s' 帧自带 0.45 前倾，过渡期绕鞍座把它旋回直立
+          const leanFix = (this.slide > 0 || this.lieT > 0.04) && this.lieT < 0.999
+            ? -0.45 * (1 - this.lieT) : 0;
           const farC = poseCanvas(skin, poseKey + '#far', (pc) =>
             Player.drawChibi(pc, skin, Object.assign({ pass: 'far' }, chibiOpts)));
+          if (leanFix) {
+            ctx.save();
+            ctx.translate(x, y - 6);
+            ctx.rotate(leanFix);
+            ctx.translate(-x, -(y - 6));
+          }
           ctx.drawImage(farC, x - POSE_OX, y - POSE_OY, POSE_BOX_W, POSE_BOX_H);
+          if (leanFix) ctx.restore();
           Mounts.draw(ctx, mountId, x, y + rideH, time, {
             run: this.run,
             grounded: this.grounded,
-            squash: this.slide > 0,
+            squashK: this.lieT,
           });
           const nearC = poseCanvas(skin, poseKey + '#near', (pc) =>
             Player.drawChibi(pc, skin, Object.assign({ pass: 'near' }, chibiOpts)));
+          if (leanFix) {
+            ctx.save();
+            ctx.translate(x, y - 6);
+            ctx.rotate(leanFix);
+            ctx.translate(-x, -(y - 6));
+          }
           ctx.drawImage(nearC, x - POSE_OX, y - POSE_OY, POSE_BOX_W, POSE_BOX_H);
+          if (leanFix) ctx.restore();
         } else {
           Mounts.draw(ctx, mountId, x, y + rideH, time, {
             run: this.run,
             grounded: this.grounded,
-            squash: this.slide > 0,
+            squashK: this.lieT,
           });
           Sprites.draw(ctx, skin.sprite, this.slide > 0 ? 'duck' : 'hold1', x, y, 63, true);
         }
@@ -281,6 +303,12 @@ class Player {
         const bob = this.grounded && this.slide <= 0 ? -Math.abs(Math.sin(this.run)) * 3 : 0; // 美术帧已含身高包络，只补细微起伏
         ctx.save();
         ctx.translate(x, y + bob);
+        // 下蹲过渡：滑铲帧绕髋部平滑躺下/立起（否则姿势一帧瞬跳）
+        if (this.lieT > 0.001 && this.lieT < 0.999) {
+          ctx.translate(0, -15);
+          ctx.rotate(-1.15 * (1 - this.lieT));
+          ctx.translate(0, 15);
+        }
         ctx.scale(this.sx, this.sy);
         // 二段跳空翻：绕身体中心翻转一周
         if (this.flipT > 0 && !this.grounded) {

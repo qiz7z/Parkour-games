@@ -21,8 +21,10 @@ function draw(ctx, id, cx, bottomY, time, opts) {
   const grounded = opts.grounded !== false;
   ctx.save();
   ctx.translate(cx, bottomY);
-  if (opts.squash) {
-    // 铲行时坐骑轻微压低（保留车轮形状，避免"压扁贴图"感）
+  if (opts.squashK > 0.001) {
+    // 铲行时坐骑压低（随 lieT 插值，保留车轮形状）
+    ctx.scale(1, 1 - 0.4 * opts.squashK);
+  } else if (opts.squash) {
     ctx.scale(1, 0.6);
   }
   if (id === 'pony') drawPony(ctx, run, grounded);
