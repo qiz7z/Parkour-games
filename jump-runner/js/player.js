@@ -432,6 +432,10 @@ function drawChibi(ctx, skin, o) {
 
   // ---- 腿 + 鞋（骑乘时分层：远腿在坐骑后、近腿在坐骑前，腿跨在坐骑上） ----
   const drawShoe = (fx, fy) => {
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.scale(0.88, 0.88);
+    ctx.translate(-fx, -fy);
     // 白袜 + 袜口主题色条纹
     roundFill(ctx, fx - 2.2, fy - 8.2, 8.4, 3.6, 1.8, '#F4F6F8', null);
     roundFill(ctx, fx - 2.2, fy - 6.7, 8.4, 1.3, 0.65, outfit, null);
@@ -440,6 +444,7 @@ function drawChibi(ctx, skin, o) {
     roundFill(ctx, fx - 3, fy - 3.7, 10.8, 2.1, 1, outfit, null);
     roundFill(ctx, fx - 3.4, fy - 1.8, 11.4, 2.4, 1.2, LINE, null);
     roundFill(ctx, fx - 1.6, fy - 5, 3.4, 1.2, 0.6, 'rgba(255,255,255,0.9)', null);
+    ctx.restore();
   };
   if (riding) {
     // 骑乘：髋部锚定鞍座（自行车随踏板微移）；自行车腿加粗+膝盖前弯，踩踏清晰可见
@@ -462,14 +467,14 @@ function drawChibi(ctx, skin, o) {
     drawShoe(f2.x, f2.y);
   } else if (grounded) {
     // 跑步：膝盖朝前泵动（远腿暗、近腿亮，拉开层次）
-    limbIK(ctx, -4, -19, f1.x, f1.y - 2, 0.24, 1, -0.45, 6, 4.8, 'rgba(214,141,105,0.9)');
-    limbIK(ctx, 4, -19, f2.x, f2.y - 2, 0.24, 1, -0.45, 6, 4.8, SKIN_TONE);
+    limbIK(ctx, -4, -20, f1.x, f1.y - 2, 0.24, 1, -0.45, 4.8, 3.6, 'rgba(214,141,105,0.85)');
+    limbIK(ctx, 4, -20, f2.x, f2.y - 2, 0.24, 1, -0.45, 4.8, 3.6, SKIN_TONE);
     drawShoe(f1.x, f1.y);
     drawShoe(f2.x, f2.y);
   } else {
     // 空中：收腿/展腿
-    limbIK(ctx, -4, -19, f1.x, f1.y - 2, 0.24, 0.9, -0.4, 6, 4.8, 'rgba(214,141,105,0.9)');
-    limbIK(ctx, 4, -19, f2.x, f2.y - 2, 0.24, 0.9, -0.4, 6, 4.8, SKIN_TONE);
+    limbIK(ctx, -4, -20, f1.x, f1.y - 2, 0.24, 0.9, -0.4, 4.8, 3.6, 'rgba(214,141,105,0.85)');
+    limbIK(ctx, 4, -20, f2.x, f2.y - 2, 0.24, 0.9, -0.4, 4.8, 3.6, SKIN_TONE);
     drawShoe(f1.x, f1.y);
     drawShoe(f2.x, f2.y);
   }
@@ -493,7 +498,7 @@ function drawChibi(ctx, skin, o) {
   // 头部整体缩小（大头Q版幼儿感 → 少年比例）：绕脸中心统一缩放，五官发型随动
   const headScale = () => {
     ctx.translate(HX, HY + 2.5);
-    ctx.scale(0.82, 0.82);
+    ctx.scale(0.62, 0.68);
     ctx.translate(-HX, -(HY + 2.5));
   };
   ctx.save();
@@ -579,6 +584,9 @@ function drawChibi(ctx, skin, o) {
 
   ctx.restore(); // 脑后发型缩放
 
+  // 脖子：真人体型的头身连接（头部缩小后必须补脖子，否则头浮在身上）
+  roundFill(ctx, -2.4, -30.2, 4.8, 5.2, 2, SKIN_TONE, SKIN_EDGE);
+
   // ---- 身体（上衣+短裤 / 连衣裙）+ 阴影 + 服装细节 ----
   const isDress = kind === 'girl_ponytail' || kind === 'girl_buns';
   if (isDress) {
@@ -624,7 +632,22 @@ function drawChibi(ctx, skin, o) {
       tg.addColorStop(1, skins.rgb(skin.fill));
       torsoGradCache[torsoKey] = tg;
     }
-    roundFill(ctx, -12.5, -28, 25, 15, 7, torsoGradCache[torsoKey], LINE); // 衣身勾边
+    // 少年体型：肩宽 → 腰收的流线躯干（不是方盒）
+    const torsoPath = () => {
+      ctx.beginPath();
+      ctx.moveTo(-11.5, -27.5);
+      ctx.quadraticCurveTo(0, -29.5, 11.5, -27.5);
+      ctx.quadraticCurveTo(12.6, -20, 9, -14.5);
+      ctx.quadraticCurveTo(0, -13, -9, -14.5);
+      ctx.quadraticCurveTo(-12.6, -20, -11.5, -27.5);
+      ctx.closePath();
+    };
+    torsoPath();
+    ctx.fillStyle = torsoGradCache[torsoKey];
+    ctx.fill();
+    ctx.strokeStyle = LINE;
+    ctx.lineWidth = 2;
+    ctx.stroke();
     // 领口（颈部小圆领）
     roundFill(ctx, -5.5, -28.8, 11, 3.2, 1.6, cloth, 'rgba(74,52,46,0.6)');
     // 胸前小圆徽（呼应角色立绘设计）
@@ -639,12 +662,12 @@ function drawChibi(ctx, skin, o) {
     ctx.strokeStyle = 'rgba(255,246,230,0.4)';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.moveTo(11.2, -24.6);
-    ctx.quadraticCurveTo(12.6, -19.5, 11, -14);
+    ctx.moveTo(10.8, -24.4);
+    ctx.quadraticCurveTo(11.8, -19.5, 9.6, -14.8);
     ctx.stroke();
     // 硬边赛璐璐阴影：右下斜切面（卡通渲染的关键是阴影有干净形状边缘）
     ctx.save();
-    roundFill(ctx, -12.5, -28, 25, 15, 7, null, null);
+    torsoPath();
     ctx.clip();
     ctx.fillStyle = 'rgba(30,34,60,0.16)';
     ctx.beginPath();
@@ -658,7 +681,7 @@ function drawChibi(ctx, skin, o) {
     // 颈部落影（头部在躯干上的环境光遮蔽）
     ctx.fillStyle = 'rgba(120,75,55,0.16)';
     ctx.beginPath();
-    ctx.ellipse(HX - 1, HY + 14.5, 6.5, 2.8, 0, 0, PI2);
+    ctx.ellipse(HX - 1, HY + 12.5, 5.5, 2.4, 0, 0, PI2);
     ctx.fill();
     if (kind === 'boy_cap') {
       roundFill(ctx, -8.5, -27.5, 17, 11.5, 4.5, outfit, null); // 珊瑚背心
@@ -687,10 +710,10 @@ function drawChibi(ctx, skin, o) {
     if (kind === 'girl_twintails') {
       roundFill(ctx, -13, -14.5, 26, 3.4, 1.7, cloth, null); // 裙摆白边
     }
-    roundFill(ctx, -10, -19, 20, 7, 3.5, darkOf(skin), LINE); // 短裤勾边
+    roundFill(ctx, -8.5, -20.5, 17, 7, 3.5, darkOf(skin), LINE); // 短裤勾边
     // 短裤左上受光（硬边）
     ctx.save();
-    roundFill(ctx, -10, -19, 20, 7, 3.5, null, null);
+    roundFill(ctx, -8.5, -20.5, 17, 7, 3.5, null, null);
     ctx.clip();
     ctx.fillStyle = 'rgba(255,246,230,0.22)';
     ctx.beginPath();
@@ -704,8 +727,8 @@ function drawChibi(ctx, skin, o) {
     ctx.strokeStyle = 'rgba(255,246,230,0.28)';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(-8.4, -13.6);
-    ctx.lineTo(8.4, -13.6);
+    ctx.moveTo(-7, -15.4);
+    ctx.lineTo(7, -15.4);
     ctx.stroke();
   }
 
@@ -713,23 +736,23 @@ function drawChibi(ctx, skin, o) {
   const SKIN_FAR = 'rgba(214,141,105,0.9)';
   const SLEEVE_FAR = skins.rgb(mixc(skin.fill, [44, 48, 82], 0.48)); // 远臂袖：比躯干阴影更深一档
   if (riding) {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.2, -0.3, 1, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.2, -0.3, 1, 6, 4.6, outfit, SKIN_TONE);
+    limbIK(ctx, -8.8, -24, h1.x, h1.y, 0.2, -0.3, 1, 4.6, 3.4, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 8.8, -24, h2.x, h2.y, 0.2, -0.3, 1, 4.6, 3.4, outfit, SKIN_TONE);
   } else if (sliding) {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.18, -1, 0.15, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.18, -0.5, 1, 6, 4.6, outfit, SKIN_TONE);
+    limbIK(ctx, -8.8, -24, h1.x, h1.y, 0.18, -1, 0.15, 4.6, 3.4, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 8.8, -24, h2.x, h2.y, 0.18, -0.5, 1, 4.6, 3.4, outfit, SKIN_TONE);
   } else if (grounded) {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.26, -1, 0.35, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.26, -1, 0.35, 6, 4.6, outfit, SKIN_TONE);
+    limbIK(ctx, -8.8, -24, h1.x, h1.y, 0.26, -1, 0.35, 4.6, 3.4, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 8.8, -24, h2.x, h2.y, 0.26, -1, 0.35, 4.6, 3.4, outfit, SKIN_TONE);
   } else {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.22, -1, 0.3, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.22, -1, 0.3, 6, 4.6, outfit, SKIN_TONE);
+    limbIK(ctx, -8.8, -24, h1.x, h1.y, 0.22, -1, 0.3, 4.6, 3.4, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 8.8, -24, h2.x, h2.y, 0.22, -1, 0.3, 4.6, 3.4, outfit, SKIN_TONE);
   }
   // 肩部袖根（近臂）：袖子从身体上长出来的感觉
   if (grounded && !sliding) {
     ctx.fillStyle = outfit;
     ctx.beginPath();
-    ctx.arc(9.5, -23.5, 4.4, 0, PI2);
+    ctx.arc(8.8, -24, 3.6, 0, PI2);
     ctx.fill();
     ctx.strokeStyle = LINE;
     ctx.lineWidth = 1.2;
@@ -737,18 +760,18 @@ function drawChibi(ctx, skin, o) {
   }
   ctx.fillStyle = SKIN_TONE;
   ctx.beginPath();
-  ctx.arc(h1.x, h1.y, 3.2, 0, PI2);
+  ctx.arc(h1.x, h1.y, 2.5, 0, PI2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(h2.x, h2.y, 3.2, 0, PI2);
+  ctx.arc(h2.x, h2.y, 2.5, 0, PI2);
   ctx.fill();
   ctx.strokeStyle = SKIN_EDGE;
   ctx.lineWidth = 1.1;
   ctx.beginPath();
-  ctx.arc(h1.x, h1.y, 3.2, 0, PI2);
+  ctx.arc(h1.x, h1.y, 2.5, 0, PI2);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(h2.x, h2.y, 3.2, 0, PI2);
+  ctx.arc(h2.x, h2.y, 2.5, 0, PI2);
   ctx.stroke();
 
   // 小围巾（天天酷跑系"少年感"经典配件）：颈后系带 + 随速度向后飘的两片尾翼
@@ -761,16 +784,16 @@ function drawChibi(ctx, skin, o) {
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(HX, HY + 13.5, 4.5, Math.PI * 0.15, Math.PI * 0.85);
+    ctx.arc(HX, HY + 11.5, 4.2, Math.PI * 0.15, Math.PI * 0.85);
     ctx.stroke();
     // 飘带两片（骑乘/跑动时后扬）
     const flow = riding ? 0.5 : Math.min(0.55, Math.abs(Math.sin(run)) * 0.25 + 0.3);
     for (const dy of [-1.5, 2.5]) {
       ctx.beginPath();
-      ctx.moveTo(HX - 4, HY + 13.5 + dy * 0.4);
+      ctx.moveTo(HX - 3.6, HY + 11.5 + dy * 0.4);
       ctx.quadraticCurveTo(
-        HX - 13, HY + 12 + dy + flap * 0.5,
-        HX - 20 - flow * 8, HY + 13 + dy + flap + flow * 4,
+        HX - 12, HY + 10.5 + dy + flap * 0.5,
+        HX - 19 - flow * 8, HY + 12 + dy + flap + flow * 4,
       );
       ctx.lineWidth = 3.4 - Math.abs(dy) * 0.3;
       ctx.stroke();
