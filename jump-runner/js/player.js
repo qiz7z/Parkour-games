@@ -234,6 +234,14 @@ class Player {
           // 铲行前倾过渡：'s' 帧自带 0.45 前倾，过渡期绕鞍座把它旋回直立
           const leanFix = (this.slide > 0 || this.lieT > 0.04) && this.lieT < 0.999
             ? -0.45 * (1 - this.lieT) : 0;
+          // 摩托悬架俯仰：连人带车绕后轮接地点随路面微摆（否则整体像贴图平移）
+          const motoPitch = mountId === 'moto' && this.grounded ? Math.sin(time * 8) * 0.028 : 0;
+          if (motoPitch) {
+            ctx.save();
+            ctx.translate(x, y + rideH);
+            ctx.rotate(motoPitch);
+            ctx.translate(-x, -(y + rideH));
+          }
           const farC = poseCanvas(skin, poseKey + '#far', (pc) =>
             Player.drawChibi(pc, skin, Object.assign({ pass: 'far' }, chibiOpts)));
           if (leanFix) {
@@ -259,6 +267,7 @@ class Player {
           }
           ctx.drawImage(nearC, x - POSE_OX, y - POSE_OY, POSE_BOX_W, POSE_BOX_H);
           if (leanFix) ctx.restore();
+          if (motoPitch) ctx.restore();
         } else {
           Mounts.draw(ctx, mountId, x, y + rideH, time, {
             run: this.run,

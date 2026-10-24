@@ -292,6 +292,18 @@ function createGame(canvas, ctx, W, H, opts) {
 
   game.update = function update(dt) {
     game.time += dt;
+    // 摩托排气突突声的可视化：骑行中排气管持续冒小烟团
+    if (game.riding && game.profile.mount === 'moto' && game.player.grounded) {
+      game.exhaustT = (game.exhaustT || 0) + dt;
+      if (game.exhaustT > 0.09) {
+        game.exhaustT = 0;
+        game.fx.emit(game.player.x - 33, game.player.y + 30 - 17, 1, {
+          angle: Math.PI, spread: 0.5, speed: 70,
+          size: 4.6, life: 0.55, color: 'rgba(158,158,168,0.42)',
+          grav: -46, world: true, puffy: true,
+        });
+      }
+    }
     if (game.pressFlash) {
       game.pressFlash.t -= dt;
       if (game.pressFlash.t <= 0) game.pressFlash = null;
