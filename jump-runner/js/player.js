@@ -443,8 +443,8 @@ function drawChibi(ctx, skin, o) {
   };
   if (riding) {
     // 骑乘：髋部锚定鞍座（自行车随踏板微移）；自行车腿加粗+膝盖前弯，踩踏清晰可见
-    const hp1 = mountId === 'bicycle' ? { x: -10 + hipSway, y: -5 } : { x: -4, y: -13 };
-    const hp2 = mountId === 'bicycle' ? { x: -6 + hipSway, y: -5 } : { x: 4, y: -13 };
+    const hp1 = mountId === 'bicycle' ? { x: -10 + hipSway, y: -5 } : { x: -4, y: -16 };
+    const hp2 = mountId === 'bicycle' ? { x: -6 + hipSway, y: -5 } : { x: 4, y: -16 };
     const legBend = mountId === 'bicycle' ? 0.38 : 0.24;
     const wNear = mountId === 'bicycle' ? 7 : 6;
     const wFar = mountId === 'bicycle' ? 5.5 : 4.8;
@@ -462,14 +462,14 @@ function drawChibi(ctx, skin, o) {
     drawShoe(f2.x, f2.y);
   } else if (grounded) {
     // 跑步：膝盖朝前泵动（远腿暗、近腿亮，拉开层次）
-    limbIK(ctx, -4, -13, f1.x, f1.y - 2, 0.24, 1, -0.45, 6, 4.8, 'rgba(214,141,105,0.9)');
-    limbIK(ctx, 4, -13, f2.x, f2.y - 2, 0.24, 1, -0.45, 6, 4.8, SKIN_TONE);
+    limbIK(ctx, -4, -17, f1.x, f1.y - 2, 0.24, 1, -0.45, 6, 4.8, 'rgba(214,141,105,0.9)');
+    limbIK(ctx, 4, -17, f2.x, f2.y - 2, 0.24, 1, -0.45, 6, 4.8, SKIN_TONE);
     drawShoe(f1.x, f1.y);
     drawShoe(f2.x, f2.y);
   } else {
     // 空中：收腿/展腿
-    limbIK(ctx, -4, -13, f1.x, f1.y - 2, 0.24, 0.9, -0.4, 6, 4.8, 'rgba(214,141,105,0.9)');
-    limbIK(ctx, 4, -13, f2.x, f2.y - 2, 0.24, 0.9, -0.4, 6, 4.8, SKIN_TONE);
+    limbIK(ctx, -4, -17, f1.x, f1.y - 2, 0.24, 0.9, -0.4, 6, 4.8, 'rgba(214,141,105,0.9)');
+    limbIK(ctx, 4, -17, f2.x, f2.y - 2, 0.24, 0.9, -0.4, 6, 4.8, SKIN_TONE);
     drawShoe(f1.x, f1.y);
     drawShoe(f2.x, f2.y);
   }
@@ -608,14 +608,14 @@ function drawChibi(ctx, skin, o) {
     const torsoKey = skin.id + '|' + kind;
     if (!torsoGradCache[torsoKey]) {
       const base = kind === 'boy_cap' ? skin.cloth : skin.fill;
-      const tg = ctx.createLinearGradient(0, -29, 0, -11);
+      const tg = ctx.createLinearGradient(0, -30, 0, -13);
       tg.addColorStop(0, skins.rgb(mixc(base, [255, 252, 240], 0.22)));
       tg.addColorStop(1, skins.rgb(skin.fill));
       torsoGradCache[torsoKey] = tg;
     }
-    roundFill(ctx, -13, -29, 26, 18, 8, torsoGradCache[torsoKey], LINE); // 衣身勾边
+    roundFill(ctx, -13, -30, 26, 17, 8, torsoGradCache[torsoKey], LINE); // 衣身勾边
     // 领口（颈部小圆领）
-    roundFill(ctx, -5.5, -29.8, 11, 3.2, 1.6, cloth, 'rgba(74,52,46,0.6)');
+    roundFill(ctx, -5.5, -30.8, 11, 3.2, 1.6, cloth, 'rgba(74,52,46,0.6)');
     // 胸前小圆徽（呼应角色立绘设计）
     ctx.fillStyle = 'rgba(255,252,244,0.92)';
     ctx.beginPath();
@@ -633,7 +633,7 @@ function drawChibi(ctx, skin, o) {
     ctx.stroke();
     // 硬边赛璐璐阴影：右下斜切面（卡通渲染的关键是阴影有干净形状边缘）
     ctx.save();
-    roundFill(ctx, -13, -29, 26, 18, 8, null, null);
+    roundFill(ctx, -13, -30, 26, 17, 8, null, null);
     ctx.clip();
     ctx.fillStyle = 'rgba(30,34,60,0.16)';
     ctx.beginPath();
@@ -676,10 +676,10 @@ function drawChibi(ctx, skin, o) {
     if (kind === 'girl_twintails') {
       roundFill(ctx, -13, -14.5, 26, 3.4, 1.7, cloth, null); // 裙摆白边
     }
-    roundFill(ctx, -10, -13.5, 20, 7, 3.5, darkOf(skin), LINE); // 短裤勾边
+    roundFill(ctx, -10, -17.5, 20, 7.5, 3.5, darkOf(skin), LINE); // 短裤勾边
     // 短裤左上受光（硬边）
     ctx.save();
-    roundFill(ctx, -10, -13.5, 20, 7, 3.5, null, null);
+    roundFill(ctx, -10, -17.5, 20, 7.5, 3.5, null, null);
     ctx.clip();
     ctx.fillStyle = 'rgba(255,246,230,0.22)';
     ctx.beginPath();
@@ -698,17 +698,24 @@ function drawChibi(ctx, skin, o) {
     ctx.stroke();
   }
 
-  // ---- 手臂（远臂暗、近臂亮；肘部后弯） ----
+  // ---- 手臂（远臂暗、近臂亮；肘部后弯；上臂衣袖 → 小臂肤色双色） ----
+  const SKIN_FAR = 'rgba(214,141,105,0.9)';
+  const SLEEVE_FAR = skins.rgb(mixc(skin.fill, [44, 48, 82], 0.48)); // 远臂袖：比躯干阴影更深一档
   if (riding) {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.2, -0.3, 1, 6, 4.6, shadeOf(skin.fill));
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.2, -0.3, 1, 6, 4.6, SKIN_TONE);
+    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.2, -0.3, 1, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.2, -0.3, 1, 6, 4.6, outfit, SKIN_TONE);
   } else if (sliding) {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.18, -1, 0.15, 6, 4.6, shadeOf(skin.fill));
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.18, -0.5, 1, 6, 4.6, outfit);
+    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.18, -1, 0.15, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.18, -0.5, 1, 6, 4.6, outfit, SKIN_TONE);
   } else if (grounded) {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.26, -1, 0.35, 6, 4.6, shadeOf(skin.fill));
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.26, -1, 0.35, 6, 4.6, outfit);
-    // 肩部袖根（近臂）：袖子从身体上长出来的感觉
+    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.26, -1, 0.35, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.26, -1, 0.35, 6, 4.6, outfit, SKIN_TONE);
+  } else {
+    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.22, -1, 0.3, 6, 4.6, SLEEVE_FAR, SKIN_FAR);
+    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.22, -1, 0.3, 6, 4.6, outfit, SKIN_TONE);
+  }
+  // 肩部袖根（近臂）：袖子从身体上长出来的感觉
+  if (grounded && !sliding) {
     ctx.fillStyle = outfit;
     ctx.beginPath();
     ctx.arc(9.5, -23.5, 4.4, 0, PI2);
@@ -716,22 +723,6 @@ function drawChibi(ctx, skin, o) {
     ctx.strokeStyle = LINE;
     ctx.lineWidth = 1.2;
     ctx.stroke();
-  } else {
-    limbIK(ctx, -9.5, -23.5, h1.x, h1.y, 0.22, -1, 0.3, 6, 4.6, shadeOf(skin.fill));
-    limbIK(ctx, 9.5, -23.5, h2.x, h2.y, 0.22, -1, 0.3, 6, 4.6, outfit);
-  }
-  // 袖口（袖子末端的衣袖卷边）+ 手（肤色 + 轮廓描边）
-  const cuff = (sx, sy, hx2, hy2) => {
-    const cx2 = sx + (hx2 - sx) * 0.84;
-    const cy2 = sy + (hy2 - sy) * 0.84;
-    ctx.fillStyle = darkOf(skin);
-    ctx.beginPath();
-    ctx.arc(cx2, cy2, 3.9, 0, PI2);
-    ctx.fill();
-  };
-  if (sliding || grounded) {
-    cuff(-9.5, -23.5, h1.x, h1.y);
-    cuff(9.5, -23.5, h2.x, h2.y);
   }
   ctx.fillStyle = SKIN_TONE;
   ctx.beginPath();
@@ -1486,7 +1477,7 @@ function poseCanvas(skin, key, drawFn) {
 }
 
 // 两段式胶囊肢体：根→关节→端点；近端粗、远端细、关节圆平滑过渡
-function limbIK(ctx, x0, y0, x1, y1, bend, bdx, bdy, wNear, wFar, color) {
+function limbIK(ctx, x0, y0, x1, y1, bend, bdx, bdy, wNear, wFar, color, colorFar) {
   const dx = x1 - x0;
   const dy = y1 - y0;
   const d = Math.max(6, Math.sqrt(dx * dx + dy * dy));
@@ -1500,6 +1491,8 @@ function limbIK(ctx, x0, y0, x1, y1, bend, bdx, bdy, wNear, wFar, color) {
   ctx.moveTo(x0, y0);
   ctx.lineTo(mx, my);
   ctx.stroke();
+  // 远端可用不同颜色（手臂：上臂衣袖 → 小臂肤色）
+  ctx.strokeStyle = colorFar || color;
   ctx.lineWidth = wFar;
   ctx.beginPath();
   ctx.moveTo(mx, my);
