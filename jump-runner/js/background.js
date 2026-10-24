@@ -120,12 +120,12 @@ class Background {
       ctx.save();
       ctx.translate(sx, sy);
       ctx.rotate(time * 0.06);
-      ctx.fillStyle = util.rgbStr(theme.sun, 0.14 * a);
+      ctx.fillStyle = util.rgbStr(theme.sun, 0.09 * a);
       for (let i = 0; i < 10; i++) {
         ctx.rotate((Math.PI * 2) / 10);
         ctx.beginPath();
         ctx.moveTo(0, -4);
-        ctx.arc(0, 0, 52, -0.16, 0.16);
+        ctx.arc(0, 0, 58, -0.13, 0.13);
         ctx.closePath();
         ctx.fill();
       }
@@ -133,26 +133,29 @@ class Background {
       // 大范围柔光晕（缓存径向渐变）
       const bloomKey = theme.sun.join(',') + '|' + sx + '|' + sy;
       if (!this._bloom || this._bloom.key !== bloomKey) {
-        const bl = ctx.createRadialGradient(sx, sy, 6, sx, sy, 120);
-        bl.addColorStop(0, util.rgbStr(theme.sun, 0.42));
-        bl.addColorStop(0.45, util.rgbStr(theme.sun, 0.14));
+        const bl = ctx.createRadialGradient(sx, sy, 6, sx, sy, 150);
+        bl.addColorStop(0, util.rgbStr(theme.sun, 0.4));
+        bl.addColorStop(0.5, util.rgbStr(theme.sun, 0.12));
         bl.addColorStop(1, util.rgbStr(theme.sun, 0));
         this._bloom = { key: bloomKey, g: bl };
       }
       ctx.globalAlpha = a;
       ctx.fillStyle = this._bloom.g;
       ctx.beginPath();
-      ctx.arc(sx, sy, 120, 0, Math.PI * 2);
+      ctx.arc(sx, sy, 150, 0, Math.PI * 2);
       ctx.fill();
-      // 近圈光晕 + 本体
-      ctx.fillStyle = util.rgbStr(theme.sun);
-      ctx.globalAlpha = 0.25 * a;
+      // 本体：径向渐变（中心偏白 → 边缘主题色，无硬边贴纸感）
+      const bodyKey = 'sun|' + theme.sun.join(',');
+      if (!this._sunBody || this._sunBody.key !== bodyKey) {
+        const sb = ctx.createRadialGradient(sx - 6, sy - 6, 3, sx, sy, 26);
+        sb.addColorStop(0, util.rgbStr(util.lerpColor(theme.sun, [255, 253, 240], 0.75)));
+        sb.addColorStop(0.65, util.rgbStr(util.lerpColor(theme.sun, [255, 250, 225], 0.35)));
+        sb.addColorStop(1, util.rgbStr(theme.sun));
+        this._sunBody = { key: bodyKey, g: sb };
+      }
+      ctx.fillStyle = this._sunBody.g;
       ctx.beginPath();
-      ctx.arc(sx, sy, 38, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = a;
-      ctx.beginPath();
-      ctx.arc(sx, sy, 24, 0, Math.PI * 2);
+      ctx.arc(sx, sy, 25, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
     }
@@ -169,22 +172,34 @@ class Background {
       ctx.globalAlpha = 1;
     }
 
-    // 云（白色主体 + 底部淡影 + 顶部小 puff）
+    // 积云：上圆下平（圆团顶部 + 平直云底）+ 底部灰蓝阴影 + 顶部暖受光
     for (const c of this.clouds) {
-      ctx.globalAlpha = 0.85 * theme.cloud;
-      ctx.fillStyle = 'rgba(110,150,190,0.35)';
-      ctx.beginPath();
-      ctx.arc(c.x + 2, c.y + 5 * c.s, 13 * c.s, 0, Math.PI * 2);
-      ctx.arc(c.x + 18 * c.s + 2, c.y + 4 * c.s + 5 * c.s, 10 * c.s, 0, Math.PI * 2);
-      ctx.arc(c.x - 14 * c.s + 2, c.y + 5 * c.s + 5 * c.s, 9 * c.s, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = 0.9 * theme.cloud;
+      const cloudShade = util.rgbStr(util.lerpColor(theme.skyBot, [96, 116, 152], 0.55), 0.85);
+      // 三圆鼓包 + 平底的云形
+      const bumps = (ox, oy, k) => {
+        ctx.beginPath();
+        ctx.arc(ox - 13 * c.s, oy + 1 * c.s, 9.5 * c.s * k, Math.PI, Math.PI * 1.95);
+        ctx.arc(ox - 1 * c.s, oy - 5 * c.s, 12 * c.s * k, Math.PI * 1.02, Math.PI * 1.85);
+        ctx.arc(ox + 12 * c.s, oy + 0.5 * c.s, 8.5 * c.s * k, Math.PI * 1.1, Math.PI * 1.98);
+        ctx.closePath();
+        ctx.fill();
+      };
+      // 阴影层（平底略低，露出云底阴影）
+      ctx.fillStyle = cloudShade;
+      bumps(c.x, c.y + 2.5 * c.s, 1);
+      ctx.fillRect(c.x - 20 * c.s, c.y + 2 * c.s, 40 * c.s, 5 * c.s);
+      // 白色主体（略上移缩小，底部留出阴影条）
       ctx.fillStyle = '#FFFFFF';
+      bumps(c.x, c.y, 0.94);
+      ctx.fillRect(c.x - 18.5 * c.s, c.y - 0.5 * c.s, 37 * c.s, 4.2 * c.s);
+      // 顶部暖受光弧
+      ctx.strokeStyle = 'rgba(255,250,232,0.6)';
+      ctx.lineWidth = 2.2 * c.s;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(c.x, c.y, 14 * c.s, 0, Math.PI * 2);
-      ctx.arc(c.x + 16 * c.s, c.y + 4 * c.s, 11 * c.s, 0, Math.PI * 2);
-      ctx.arc(c.x - 16 * c.s, c.y + 5 * c.s, 10 * c.s, 0, Math.PI * 2);
-      ctx.arc(c.x + 5 * c.s, c.y - 6 * c.s, 8 * c.s, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.arc(c.x - 1 * c.s, c.y - 4 * c.s, 9.4 * c.s, Math.PI * 1.22, Math.PI * 1.62);
+      ctx.stroke();
     }
     ctx.globalAlpha = 1;
 
@@ -241,10 +256,15 @@ class Background {
       const idx = base + i;
       const sx = idx * period - world;
       const h = minH + util.hash(idx) * (maxH - minH);
-      ctx.moveTo(sx - period * 0.62, this.groundY + 4);
-      ctx.lineTo(sx, this.groundY + 4 - h);
-      ctx.lineTo(sx + period * 0.62, this.groundY + 4);
-      peaks.push({ x: sx, y: this.groundY + 4 - h, h, w: period * 0.62 });
+      const bw = period * 0.62;
+      const shoulder = (util.hash(idx + 3) - 0.5) * 8; // 主峰两侧不对称的肩部
+      // 曲线山脊：左坡微凹上扬 → 圆润主峰 → 次峰肩 → 右坡下降（不是折纸直线三角）
+      ctx.moveTo(sx - bw, this.groundY + 4);
+      ctx.quadraticCurveTo(sx - bw * 0.42, this.groundY + 4 - h * 0.52, sx - bw * 0.16 + shoulder, this.groundY + 4 - h * 0.86);
+      ctx.quadraticCurveTo(sx - bw * 0.05, this.groundY - h - 2, sx + bw * 0.07, this.groundY + 4 - h * 0.9);
+      ctx.quadraticCurveTo(sx + bw * 0.34 + shoulder, this.groundY + 4 - h * 0.42, sx + bw * 0.6, this.groundY + 4 - h * 0.18);
+      ctx.quadraticCurveTo(sx + bw * 0.78, this.groundY + 4 - h * 0.06, sx + bw, this.groundY + 4);
+      peaks.push({ x: sx, y: this.groundY - h - 2, h, w: bw });
     }
     ctx.fill();
     // 朝阳亮面（山体右侧受光，双色调体积感）
@@ -252,9 +272,10 @@ class Background {
       ctx.fillStyle = lightColor;
       ctx.beginPath();
       for (const p of peaks) {
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + p.w * 0.62, this.groundY + 4);
-        ctx.lineTo(p.x + p.w * 0.06, this.groundY + 4);
+        ctx.moveTo(p.x + 2, p.y + 4);
+        ctx.quadraticCurveTo(p.x + p.w * 0.42, this.groundY + 4 - p.h * 0.34, p.x + p.w * 0.66, this.groundY + 4);
+        ctx.lineTo(p.x + p.w * 0.1, this.groundY + 4);
+        ctx.closePath();
       }
       ctx.fill();
     }

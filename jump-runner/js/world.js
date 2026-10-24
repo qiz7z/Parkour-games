@@ -307,11 +307,20 @@ class World {
         ctx.fillStyle = 'rgba(255,255,255,0.09)';
         ctx.fill();
       }
-      // 草皮（渐变）
+      // 草皮（渐变，顶面更亮）
       ctx.fillStyle = this._grass.g;
-      ctx.fillRect(drawX, gy, w, 12);
-      ctx.fillStyle = util.rgbStr(theme.grassDark);
-      ctx.fillRect(drawX, gy + 12, w, 3);
+      ctx.fillRect(drawX, gy, w, 13);
+      ctx.fillStyle = 'rgba(255,255,240,0.18)';
+      ctx.fillRect(drawX, gy, w, 2.2); // 受光草顶
+      // 草→土过渡（根系层渐变，不再是一条生硬暗线）
+      if (!this._root || this._root.key !== theme.grassDark.join(',')) {
+        const rg = ctx.createLinearGradient(0, gy + 12, 0, gy + 30);
+        rg.addColorStop(0, util.rgbStr(theme.grassDark, 0.85));
+        rg.addColorStop(1, util.rgbStr(theme.grassDark, 0));
+        this._root = { key: theme.grassDark.join(','), g: rg };
+      }
+      ctx.fillStyle = this._root.g;
+      ctx.fillRect(drawX, gy + 12, w, 18);
       // 草皮边缘的小圆齿（让边缘不那么生硬）
       ctx.fillStyle = util.rgbStr(util.lerpColor(theme.grass, [255, 255, 255], 0.14));
       const cStart = Math.max(seg.x, scroll - 20);
