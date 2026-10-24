@@ -10,6 +10,10 @@ function ensureCtx() {
       }
     } catch (e) { /* 忽略，保持静音 */ }
   }
+  // iOS 真机：音频会话被打断（来电/Siri/拔耳机）后 context 滞留 suspended，必须显式恢复
+  if (actx && actx.state === 'suspended' && typeof actx.resume === 'function') {
+    try { actx.resume(); } catch (e) { /* 忽略 */ }
+  }
   return actx;
 }
 
@@ -67,6 +71,8 @@ module.exports = {
   },
   startBgm,
   stopBgm,
+  suspendBgm,
+  resumeBgm,
   setMuted,
   isMuted,
 };
@@ -75,6 +81,7 @@ module.exports = {
 let muted = false;
 let bgmTimer = null;
 let bgmStep = 0;
+let bgmWanted = false; // 游戏进行中希望 BGM 在播（切后台只是暂停 timer，不清此标记）
 const SCALE = [262, 294, 330, 392, 440, 523, 587]; // C 大调五声
 const MELODY = [0, 2, 4, 2, 5, 4, 2, 1, 0, 2, 4, 5, 6, 5, 4, 2];
 
@@ -89,21 +96,43 @@ function bgmStepPlay() {
 }
 
 function startBgm() {
+  bgmWanted = true;
   if (muted || bgmTimer || !ensureCtx()) return;
   bgmStep = 0;
   bgmTimer = setInterval(bgmStepPlay, 165);
 }
 
 function stopBgm() {
+  bgmWanted = false;
   if (bgmTimer) {
     clearInterval(bgmTimer);
     bgmTimer = null;
   }
 }
 
+// 切后台：停节拍器防漂移/防后台放音，游戏回来时按 bgmWanted 恢复
+function suspendBgm() {
+  if (bgmTimer) {
+    clearInterval(bgmTimer);
+    bgmTimer = null;
+  }
+}
+
+// 回前台：恢复音频上下文与 BGM
+function resumeBgm() {
+  const a = ensureCtx();
+  if (a && a.state === 'suspended' && typeof a.resume === 'function') {
+    try { a.resume(); } catch (e) { /* 忽略 */ }
+  }
+  if (bgmWanted && !muted && !bgmTimer && ensureCtx()) {
+    bgmTimer = setInterval(bgmStepPlay, 165);
+  }
+}
+
 function setMuted(m) {
   muted = !!m;
-  if (muted) stopBgm();
+  if (muted) suspendBgm();
+  else if (bgmWanted) resumeBgm(); // 游戏中取消静音立即恢复 BGM，不用等下一局
 }
 
 function isMuted() {

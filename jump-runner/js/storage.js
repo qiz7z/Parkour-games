@@ -1,5 +1,7 @@
 // 本地存档：最高分 / 金币总额 / 皮肤 / 坐骑 / 历史记录
+// 主档 + 备份档双写：主档 JSON 损坏时从备份恢复，避免进度清零
 const KEY = 'jumpy_save_v1';
+const BAK = 'jumpy_save_bak';
 
 function normalizeHistory(h) {
   if (!Array.isArray(h)) return [];
@@ -32,10 +34,15 @@ function normalize(d) {
 }
 
 function load() {
+  // 主档 → 备份档 → 旧版仅最高分 → 新档
   try {
     const raw = wx.getStorageSync(KEY);
     if (raw) return normalize(JSON.parse(raw));
-  } catch (e) { /* 解析失败按新档处理 */ }
+  } catch (e) { /* 主档损坏，尝试备份档 */ }
+  try {
+    const bak = wx.getStorageSync(BAK);
+    if (bak) return normalize(JSON.parse(bak));
+  } catch (e) { /* 备份也损坏按新档处理 */ }
   // 兼容旧版仅存最高分的数据
   let best = 0;
   try {
@@ -54,7 +61,13 @@ function load() {
 
 function save(profile) {
   try {
-    wx.setStorageSync(KEY, JSON.stringify(normalize(profile)));
+    const str = JSON.stringify(normalize(profile));
+    // 先把上一份完好的主档转存为备份再写新主档（写坏时最多丢最近一局）
+    try {
+      const prev = wx.getStorageSync(KEY);
+      if (prev && prev !== str) wx.setStorageSync(BAK, prev);
+    } catch (e) { /* 备份失败不阻塞主档写入 */ }
+    wx.setStorageSync(KEY, str);
   } catch (e) { /* 存储失败不影响游戏 */ }
 }
 

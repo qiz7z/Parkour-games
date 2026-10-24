@@ -108,7 +108,8 @@ class World {
       this.obstacles.push({ type: 'bird', x: this.cursor, w: 34, h: 95, gap: 30 });
       this.advance(34);
     } else if (kind === 'pit') {
-      const width = Math.min(160, 70 + 45 * diff + util.rand(0, 30));
+      // 后期坑更宽（diff=1 时 132-162px）：极速下单跳位移 ≥310px，仍留足安全余量
+      const width = 70 + 62 * diff + util.rand(0, 30);
       if (Math.random() < 0.7) {
         this.coinArc(this.cursor + width / 2, this.groundY - 135, 5, width / 2 + 40);
       }

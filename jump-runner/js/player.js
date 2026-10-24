@@ -1162,6 +1162,8 @@ function makeActorImg(src) {
 
 function loadActors() {
   if (actorCount) return;
+  // 全部 AI 素材开关关闭时不发起任何图片加载（避免加载永不渲染的 PNG）
+  if (!USE_ACTOR_POSES && !USE_PUPPET && !USE_ACTOR_RIDES) return;
   for (const sp of ACTOR_SPRITES) {
     for (const p of ACTOR_POSES) {
       const img = makeActorImg(ACTOR_BASE + sp + '/' + p + '.png');

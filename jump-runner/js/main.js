@@ -179,7 +179,7 @@ function createGame(canvas, ctx, W, H, opts) {
     }
     const d = new Date();
     prof.history = (prof.history || []);
-    prof.history.push({ s: game.score, d: (d.getMonth() + 1) + '-' + d.getDate() });
+    prof.history.push({ s: game.score, d: d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() });
     prof.history.sort((a, b) => b.s - a.s);
     prof.history = prof.history.slice(0, 8);
     saveProfile(prof);
@@ -779,7 +779,12 @@ function start() {
 
   let last = Date.now();
   if (wx.onShow) {
-    wx.onShow(() => { last = Date.now(); }); // 从后台切回时不跳帧
+    // 从后台切回：不跳帧 + 恢复音频上下文/BGM（iOS 会话被打断后的自愈）
+    wx.onShow(() => { last = Date.now(); sound.resumeBgm(); });
+  }
+  if (wx.onHide) {
+    // 切后台：停 BGM 节拍器（防后台放音与节拍漂移）
+    wx.onHide(() => sound.suspendBgm());
   }
 
   function loop() {
