@@ -419,18 +419,18 @@ function drawChibi(ctx, skin, o) {
       h2 = { x: 28.5, y: -2.5 };
       rideBob = Math.sin(th * 2) * 1.2;
     } else if (mountId === 'moto') {
-      // 驾驶姿势：深前倾、头压低贴近油箱 + 引擎微振
+      // 驾驶姿势：深前倾、头压低贴近油箱 + 引擎微振；双脚踩实脚踏（引擎两侧）
       rideLean = 0.26;
-      f1 = { x: 7, y: -2 };
-      f2 = { x: 12, y: -3.5 };
+      f1 = { x: 1, y: 15 };
+      f2 = { x: 5.5, y: 16.5 };
       h1 = { x: 20, y: -11 };
       h2 = { x: 23, y: -12.5 };
       rideBob = grounded ? Math.sin(run * 12) * 0.7 : 0;
     } else {
-      // 小马驹 / 小恐龙：随步态起伏，手握缰绳
+      // 小马驹 / 小恐龙：随步态起伏，手握缰绳；双脚垂在坐骑两侧（脚蹬位）
       rideLean = 0.06 + Math.sin(run * 0.9) * 0.035;
-      f1 = { x: 5, y: -3 };
-      f2 = { x: 11, y: -5 };
+      f1 = { x: 4, y: 8 };
+      f2 = { x: 9.5, y: 9.5 };
       h1 = { x: 12.5, y: -11 + Math.sin(run * 0.9) * 1.6 };
       h2 = { x: 15.5, y: -8 };
       rideBob = grounded ? -Math.abs(Math.sin(run * 0.9)) * 2.2 : -1.5;

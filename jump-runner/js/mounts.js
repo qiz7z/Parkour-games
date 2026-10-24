@@ -519,6 +519,15 @@ function drawMoto(ctx, run) {
   roundFill(ctx, 14, -27, 12, 9, 4, '#FFF3E0', dark);
   // 发动机（深色体块）
   roundFill(ctx, -6, -16, 16, 9, 3.5, seat, metalDark);
+  // 脚踏（骑手脚踩实的金属杆，从发动机两侧探出）
+  ctx.strokeStyle = metalDark;
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-2, -14);
+  ctx.lineTo(-7, -12.5);
+  ctx.stroke();
+  roundFill(ctx, 1, -15.4, 6.4, 2.8, 1.4, metal, metalDark);
   ctx.strokeStyle = metalDark;
   ctx.lineWidth = 1.2;
   ctx.beginPath();
